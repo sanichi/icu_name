@@ -2,12 +2,12 @@
 require File.expand_path("../lib/icu_name/version", __FILE__)
 
 Gem::Specification.new do |s|
-  s.name        = "icu_cname"
+  s.name        = "icu_name"
   s.version     = ICU::Name::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Mark Orr"]
   s.email       = "mark.j.l.orr@googlemail.com"
-  s.homepage    = "http://rubygems.org/gems/icu_cname"
+  s.homepage    = "http://rubygems.org/gems/icu_name"
   s.summary     = "Canonicalises and matches person names"
   s.description = "Canonicalises and matches person names with Latin1 characters and first and last names"
 

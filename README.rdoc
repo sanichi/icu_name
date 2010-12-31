@@ -2,9 +2,15 @@
 
 Canonicalises and matches person names with Western European characters and first and last names.
 
+== Installation
+
+For ruby 1.9.2 and above.
+
+  gem install icu_name
+
 == Names
 
-This class exists for two main reasons:
+This class exists for two main purposes:
 
 * to normalise to a common format the different ways names are typed in practice
 * to be able to match two names even if they are not exactly the same
