@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    icu_name (0.0.2)
+    icu_name (0.0.3)
 
 GEM
   remote: http://rubygems.org/
