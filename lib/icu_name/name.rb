@@ -17,14 +17,14 @@ module ICU
     end
 
     # First name getter.
-    def first(opt={})
-      return ActiveSupport::Inflector.transliterate(@first) if opt[:ascii]
+    def first(opts={})
+      return ActiveSupport::Inflector.transliterate(@first) if opts[:ascii]
       @first
     end
 
     # Last name getter.
-    def last(opt={})
-      return ActiveSupport::Inflector.transliterate(@last) if opt[:ascii]
+    def last(opts={})
+      return ActiveSupport::Inflector.transliterate(@last) if opts[:ascii]
       @last
     end
 
@@ -57,6 +57,7 @@ module ICU
       match_first(first(opts), other.first) && match_last(last(opts), other.last)
     end
 
+    # :stopdoc:
     private
 
     # Canonicalise the first and last names.
