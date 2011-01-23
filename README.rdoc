@@ -8,6 +8,8 @@ For ruby 1.9.2 and above.
 
   gem install icu_name
 
+It depends on active_support and i18n.
+
 == Names
 
 This class exists for two main purposes:
@@ -55,8 +57,42 @@ Some of the ways last names are canonicalised are illustrated below:
 
   ICU::Name.new('John', 'O Reilly').last         # => "O'Reilly"
   ICU::Name.new('dave', 'mcmanus').last          # => "McManus"
-  ICU::Name.new('pete', 'MACMANUS').last         # => "MacManus"
 
+== Characters and Encoding
+
+The class can only cope with Western European letter characters, including the accented ones in Latin-1.
+It's various accessors (_first_, _last_, _name_, _rname_, _to_s_) always return strings encoded in UTF-8,
+no matter what the input encoding.
+
+  eric = ICU::Name.new('éric', 'PRIÉ')
+  eric.rname                                     # => "Prié, Éric"
+  eric.rname.encoding.name                       # => "UTF-8"
+
+  eric = ICU::Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
+  eric.rname                                     # => "Prié, Éric"
+  eric.rname.encoding.name                       # => "UTF-8"
+
+Currently, all characters outside the Latin-1 range are removed as if they wern't there.
+
+  ICU::Name.new('Józef Żabiński').name           # "Józef Abiski"
+  ICU::Name.new('Bǔ Xiángzhì').name              # "B. Xiángzhì"
+
+Accented Latin-1 characters can be transliterated into their ascii counterparts by setting the
+_ascii_ option to a true value.
+
+  eric.name(:ascii => true)                      # => "Eric Prie"
+
+This works with all the other accessors and also with the constructor:
+
+  eric_ascii = ICU::Name.new('éric', 'PRIÉ', :ascii => true)
+  eric_ascii.name                                # => "Eric Prie"
+  
+The option also relaxes the need for accented characters to match exactly:
+
+  eric.match('Éric', 'Prié')                     # => true
+  eric.match('Eric', 'Prie')                     # => false
+  eric.match('Eric', 'Prie', :ascii => true)     # => true
+  
 == Author
 
 Mark Orr, rating officer for the Irish Chess Union (ICU[http://icu.ie]).

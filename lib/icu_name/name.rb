@@ -1,41 +1,60 @@
+require 'active_support'
+require 'active_support/inflector/transliterate'
+require 'active_support/core_ext/string/multibyte'
+
 module ICU
   class Name
-    attr_reader :first, :last
 
     # Construct from one or two strings or any objects that have a to_s method.
-    def initialize(name1='', name2='')
-      @name1 = name1.to_s.dup
-      @name2 = name2.to_s.dup
+    def initialize(name1='', name2='', opt={})
+      @name1 = Util.to_utf8(name1.to_s)
+      @name2 = Util.to_utf8(name2.to_s)
       canonicalize
+      if opt[:ascii]
+        @first = ActiveSupport::Inflector.transliterate(@first)
+        @last  = ActiveSupport::Inflector.transliterate(@last)
+      end
+    end
+
+    # First name getter.
+    def first(opt={})
+      return ActiveSupport::Inflector.transliterate(@first) if opt[:ascii]
+      @first
+    end
+
+    # Last name getter.
+    def last(opt={})
+      return ActiveSupport::Inflector.transliterate(@last) if opt[:ascii]
+      @last
     end
 
     # Return a complete name, first name first, no comma.
-    def name
+    def name(opts={})
       name = ''
-      name << @first
+      name << first(opts)
       name << ' ' if @first.length > 0 && @last.length > 0
-      name << @last
+      name << last(opts)
       name
     end
 
     # Return a reversed complete name, first name last after a comma.
-    def rname
+    def rname(opts={})
       name = ''
-      name << @last
+      name << last(opts)
       name << ', ' if @first.length > 0 && @last.length > 0
-      name << @first
+      name << first(opts)
       name
     end
 
     # Convert object to a string.
-    def to_s
-      rname
+    def to_s(opts={})
+      rname(opts)
     end
 
     # Match another name to this object, returning true or false.
-    def match(name1='', name2='')
-      other = Name.new(name1, name2)
-      match_first(first, other.first) && match_last(last, other.last)
+    def match(name1='', name2='', opts={})
+      other = Name.new(name1, name2, opts)
+      match_first(first(opts), other.first) && match_last(last(opts), other.last)
     end
 
     private
@@ -58,6 +77,7 @@ module ICU
         else
           parts = clean(@name1).split(/ /)
           last  = parts.pop || ''
+          last  = "#{parts.pop}'#{last}" if parts.size > 1 && parts.last == "O" && !last.match(/^O'/)
           first = parts.join(' ')
         end
       else
@@ -68,36 +88,32 @@ module ICU
       [first, last]
     end
 
-    # Clean up characters in any name.
+    # Clean up characters in any name keeping only letters (including accented), hyphens, and single quotes.
     def clean(name)
       name.gsub!(/`/, "'")
-      name.gsub!(/[^-a-zA-Z.'\s]/, '')
+      name.gsub!(/[^-a-zA-Z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{ff}.'\s]/, '')
       name.gsub!(/\./, ' ')
       name.gsub!(/\s*-\s*/, '-')
       name.gsub!(/'+/, "'")
-      name.strip.downcase.split(/\s+/).map do |n|
+      name.strip.mb_chars.downcase.split(/\s+/).map do |n|
         n.sub!(/^-+/, '')
         n.sub!(/-+$/, '')
         n.split(/-/).map do |p|
           p.capitalize!
         end.join('-')
-      end.join(' ')
+      end.join(' ').to_s
     end
 
-    # Apply final touches to finish canonicalising a first name. 
+    # Apply final touches to finish canonicalising a first name mb_chars object, returning a normal string.
     def finish_first(names)
-      names.gsub(/([A-Z])\b/, '\1.')
+      names.gsub(/([A-Z\u{c0}-\u{de}])\b/, '\1.')
     end
 
-    # Apply final touches to finish canonicalising a last name. 
+    # Apply final touches to finish canonicalising a last name mb_chars object, returning a normal string.
     def finish_last(names)
-      names.gsub!(/\b([A-Z])'([a-z])/) { |m| $1 << "'" << $2.upcase}
-      names.gsub!(/\bMc([a-z])/) { |m| 'Mc' << $1.upcase}
-      names.gsub!(/\bMac([a-z])/) do |m|
-        letter = $1
-        'Mac'.concat(@name2.match("[mM][aA][cC]#{letter}") ? letter : letter.upcase)
-      end
-      names.gsub!(/\bO ([A-Z])/) { |m| "O'" << $1 }
+      names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
+      names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
+      names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" << $1 }
       names
     end
 
@@ -134,9 +150,9 @@ module ICU
     def match_last(last1, last2)
       return true if last1 == last2
       [last1, last2].each do |last|
-        last.downcase!             # MacDonaugh and Macdonaugh
-        last.gsub!(/\bmac/, 'mc')  # MacDonaugh and McDonaugh
-        last.tr!('-', ' ')         # Lowry-O'Reilly and Lowry O'Reilly
+        last.downcase!            # case insensitive
+        last.gsub!(/\bmac/, 'mc') # MacDonaugh and McDonaugh
+        last.tr!('-', ' ')        # Lowry-O'Reilly and Lowry O'Reilly
       end
       last1 == last2
     end
@@ -156,8 +172,8 @@ module ICU
     #  2 = match involving 2 initials
     def match_first_name(first1, first2)
       initials = 0
-      initials+= 1 if first1.match(/^[A-Z]\.?$/)
-      initials+= 1 if first2.match(/^[A-Z]\.?$/)
+      initials+= 1 if first1.match(/^[A-Z\u{c0}-\u{de}]\.?$/)
+      initials+= 1 if first2.match(/^[A-Z\u{c0}-\u{de}]\.?$/)
       return initials if first1 == first2
       return 0 if initials == 0 && match_nick_name(first1, first2)
       return -1 unless initials > 0
