@@ -9,11 +9,18 @@ module ICU
     def initialize(name1='', name2='', opt={})
       @name1 = Util.to_utf8(name1.to_s)
       @name2 = Util.to_utf8(name2.to_s)
-      canonicalize
+      originalize
       if opt[:ascii]
-        @first = ActiveSupport::Inflector.transliterate(@first)
-        @last  = ActiveSupport::Inflector.transliterate(@last)
+        @name1 = ActiveSupport::Inflector.transliterate(@name1)
+        @name2 = ActiveSupport::Inflector.transliterate(@name2)
       end
+      canonicalize
+    end
+    
+    # Original text getter.
+    def original(opts={})
+      return ActiveSupport::Inflector.transliterate(@original) if opts[:ascii]
+      @original
     end
 
     # First name getter.
@@ -60,6 +67,13 @@ module ICU
     # :stopdoc:
     private
 
+    # Save the original inputs without any cleanup other than whitespace.
+    def originalize
+      @original = "#{@name1} #{@name2}"
+      @original.strip!
+      @original.gsub!(/\s+/, ' ')
+    end
+
     # Canonicalise the first and last names.
     def canonicalize
       first, last = partition
@@ -70,7 +84,7 @@ module ICU
     # Split one complete name into first and last parts.
     def partition
       if @name2.length == 0
-        # Only one imput so we must split first and last.
+        # Only one input so we must split it into first and last.
         parts = @name1.split(/,/)
         if parts.size > 1
           last  = clean(parts.shift || '')
@@ -78,7 +92,7 @@ module ICU
         else
           parts = clean(@name1).split(/ /)
           last  = parts.pop || ''
-          last  = "#{parts.pop}'#{last}" if parts.size > 1 && parts.last == "O" && !last.match(/^O'/)
+          last  = "#{parts.pop}'#{last}" if parts.size > 1 && parts.last.match(/^O$/i) && !last.match(/^O'/i)  # "O", "Reilly" => "O'Reilly"
           first = parts.join(' ')
         end
       else
@@ -114,6 +128,11 @@ module ICU
     def finish_last(names)
       names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
       names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
+      names.gsub!(/\bMac([a-z\u{e0}-\u{ff}])/) do |m|
+        letter = $1  # capitalize after "Mac" only if the original clearly indicates it
+        upper = letter.mb_chars.upcase.to_s
+        'Mac'.concat(@original.match(/\bMac#{upper}/) ? upper : letter)
+      end
       names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" << $1 }
       names
     end

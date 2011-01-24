@@ -26,6 +26,10 @@ Capitalisation, white space and punctuation will all be automatically corrected:
   robert.name                                    # => 'Robert J. Fischer'
   robert.rname                                   # => 'Fischer, Robert J.'  (reversed name)
 
+The input text, without any changes apart from white-space cleanup, is returned by the _original_ method:
+
+  robert.original                                # => 'robert j FISHER'
+
 To avoid ambiguity when either the first or second names consist of multiple words, it is better to
 supply the two separately, if known. However, the full name can be supplied alone to the constructor
 and a guess will be made as to the first and last names.
@@ -61,8 +65,8 @@ Some of the ways last names are canonicalised are illustrated below:
 == Characters and Encoding
 
 The class can only cope with Western European letter characters, including the accented ones in Latin-1.
-It's various accessors (_first_, _last_, _name_, _rname_, _to_s_) always return strings encoded in UTF-8,
-no matter what the input encoding.
+It's various accessors (_first_, _last_, _name_, _rname_, _to_s_, _original_) always return strings
+encoded in UTF-8, no matter what the input encoding.
 
   eric = ICU::Name.new('éric', 'PRIÉ')
   eric.rname                                     # => "Prié, Éric"
@@ -71,11 +75,13 @@ no matter what the input encoding.
   eric = ICU::Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
   eric.rname                                     # => "Prié, Éric"
   eric.rname.encoding.name                       # => "UTF-8"
+  eric.original                                  # => "éric PRIÉ"
+  eric.original.encoding.name                    # => "UTF-8"
 
 Currently, all characters outside the Latin-1 range are removed as if they wern't there.
 
-  ICU::Name.new('Józef Żabiński').name           # "Józef Abiski"
-  ICU::Name.new('Bǔ Xiángzhì').name              # "B. Xiángzhì"
+  ICU::Name.new('Józef Żabiński').name           # => "Józef Abiski"
+  ICU::Name.new('Bǔ Xiángzhì').name              # => "B. Xiángzhì"
 
 Accented Latin-1 characters can be transliterated into their ascii counterparts by setting the
 _ascii_ option to a true value.
@@ -86,6 +92,8 @@ This works with all the other accessors and also with the constructor:
 
   eric_ascii = ICU::Name.new('éric', 'PRIÉ', :ascii => true)
   eric_ascii.name                                # => "Eric Prie"
+  jozef_ascii = ICU::Name.new('Józef', 'Żabiński', :ascii => true).name
+  jozef_ascii.name                               # => "Jozef Zabinski"
   
 The option also relaxes the need for accented characters to match exactly:
 

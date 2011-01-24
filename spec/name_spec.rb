@@ -5,7 +5,7 @@ module ICU
   describe Name do
     context "public methods" do
       before(:each) do
-        @simple = Name.new('mark j l', 'orr')
+        @simple = Name.new('mark j l', 'ORR')
       end
 
       it "#first returns the first name(s)" do
@@ -26,6 +26,10 @@ module ICU
 
       it "#to_s is the same as rname" do
         @simple.to_s.should == 'Orr, Mark J. L.'
+      end
+
+      it "#original returns the original data" do
+        @simple.original.should == 'mark j l ORR'
       end
 
       it "#match returns true if and only if two names match" do
@@ -62,18 +66,25 @@ module ICU
       end
 
       it "characters and encoding" do
-        josef = ICU::Name.new('Józef', 'Żabiński')
+        josef = Name.new('Józef', 'Żabiński')
         josef.name.should == "Józef Abiski"
-        bu = ICU::Name.new('Bǔ Xiángzhì')
+        josef.original.should == "Józef Żabiński"
+        josef.original(:ascii => true).should == "Jozef Zabinski"
+        josef = Name.new('Józef', 'Żabiński', :ascii => true)
+        josef.name.should == "Jozef Zabinski"
+        bu = Name.new('Bǔ Xiángzhì')
         bu.name.should == "B. Xiángzhì"
-        eric = ICU::Name.new('éric', 'PRIÉ')
+        eric = Name.new('éric', 'PRIÉ')
         eric.rname.should == "Prié, Éric"
         eric.rname.encoding.name.should == "UTF-8"
-        eric = ICU::Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
+        eric = Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
         eric.rname.should == "Prié, Éric"
         eric.rname.encoding.name.should == "UTF-8"
+        eric.original.should == "éric PRIÉ"
+        eric.original(:ascii => true).should == "eric PRIE"
+        eric.original.encoding.name.should == "UTF-8"
         eric.name(:ascii => true).should == "Eric Prie"
-        eric_ascii = ICU::Name.new('éric', 'PRIÉ', :ascii => true)
+        eric_ascii = Name.new('éric', 'PRIÉ', :ascii => true)
         eric_ascii.name.should == "Eric Prie"
         eric.match('Éric', 'Prié').should be_true
         eric.match('Eric', 'Prie').should be_false
@@ -104,9 +115,12 @@ module ICU
       it "should be handled correctly" do
         Name.new('shane', "mccabe").name.should == "Shane McCabe"
         Name.new('shawn', "macdonagh").name.should == "Shawn Macdonagh"
+        Name.new('Colin', "MacNab").name.should == "Colin MacNab"
+        Name.new('colin', "macnab").name.should == "Colin Macnab"
         Name.new('bartlomiej', "macieja").name.should == "Bartlomiej Macieja"
         Name.new('türko', "mcözgür").name.should == "Türko McÖzgür"
         Name.new('TÜRKO', "MACÖZGÜR").name.should == "Türko Macözgür"
+        Name.new('Türko', "MacÖzgür").name.should == "Türko MacÖzgür"
       end
     end
 
@@ -168,6 +182,14 @@ module ICU
     context "construction from an instance" do
       it "should be possible" do
         Name.new(Name.new('ORR, mark j l')).name.should == 'Mark J. L. Orr'
+      end
+    end
+
+    context "the original input" do
+      it "should be the original text unaltered except for white space" do
+        Name.new(' Mark   j l   ', ' ORR  ').original.should == 'Mark j l ORR'
+        Name.new('Józef', 'Żabiński').original.should == 'Józef Żabiński'
+        Name.new('Ui  Laigleis,Gearoidin').original.should == 'Ui Laigleis,Gearoidin'
       end
     end
 
