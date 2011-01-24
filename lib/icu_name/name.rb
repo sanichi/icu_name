@@ -1,3 +1,4 @@
+# encoding: UTF-8
 require 'active_support'
 require 'active_support/inflector/transliterate'
 require 'active_support/core_ext/string/multibyte'
@@ -6,32 +7,28 @@ module ICU
   class Name
 
     # Construct from one or two strings or any objects that have a to_s method.
-    def initialize(name1='', name2='', opt={})
+    def initialize(name1='', name2='')
       @name1 = Util.to_utf8(name1.to_s)
       @name2 = Util.to_utf8(name2.to_s)
       originalize
-      if opt[:ascii]
-        @name1 = ActiveSupport::Inflector.transliterate(@name1)
-        @name2 = ActiveSupport::Inflector.transliterate(@name2)
-      end
       canonicalize
     end
     
     # Original text getter.
     def original(opts={})
-      return ActiveSupport::Inflector.transliterate(@original) if opts[:ascii]
+      return transliterate(@original, opts[:chars]) if opts[:chars]
       @original
     end
 
     # First name getter.
     def first(opts={})
-      return ActiveSupport::Inflector.transliterate(@first) if opts[:ascii]
+      return transliterate(@first, opts[:chars]) if opts[:chars]
       @first
     end
 
     # Last name getter.
     def last(opts={})
-      return ActiveSupport::Inflector.transliterate(@last) if opts[:ascii]
+      return transliterate(@last, opts[:chars]) if opts[:chars]
       @last
     end
 
@@ -60,8 +57,8 @@ module ICU
 
     # Match another name to this object, returning true or false.
     def match(name1='', name2='', opts={})
-      other = Name.new(name1, name2, opts)
-      match_first(first(opts), other.first) && match_last(last(opts), other.last)
+      other = Name.new(name1, name2)
+      match_first(first(opts), other.first(opts)) && match_last(last(opts), other.last(opts))
     end
 
     # :stopdoc:
@@ -72,6 +69,18 @@ module ICU
       @original = "#{@name1} #{@name2}"
       @original.strip!
       @original.gsub!(/\s+/, ' ')
+    end
+    
+    # Transliterate characters to ASCII or Latin1.
+    def transliterate(str, chars='US-ASCII')
+      case chars
+      when /^(US-?)?ASCII/i
+        ActiveSupport::Inflector.transliterate(str)
+      when /^(Windows|CP)-?1252|ISO-?8859-?1|Latin(-?1)?$/i
+        str.gsub(/./) { |m| m.ord < 256 ? m : ActiveSupport::Inflector.transliterate(m) }
+      else
+        str.dup
+      end
     end
 
     # Canonicalise the first and last names.
@@ -106,7 +115,15 @@ module ICU
     # Clean up characters in any name keeping only letters (including accented), hyphens, and single quotes.
     def clean(name)
       name.gsub!(/`/, "'")
-      name.gsub!(/[^-a-zA-Z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{ff}.'\s]/, '')
+      name.gsub!(/./) do |m|
+        if m.ord < 256
+          # Keep Latin1 accented letters.
+          m.match(/^[-a-zA-Z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{ff}.'\s]$/) ? m : ''
+        else
+          # Keep ASCII characters with diacritics (e.g. Polish ł and Ś).
+          transliterate(m) == '?' ? '' : m
+        end
+      end
       name.gsub!(/\./, ' ')
       name.gsub!(/\s*-\s*/, '-')
       name.gsub!(/'+/, "'")

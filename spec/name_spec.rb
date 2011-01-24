@@ -66,29 +66,25 @@ module ICU
       end
 
       it "characters and encoding" do
-        josef = Name.new('Józef', 'Żabiński')
-        josef.name.should == "Józef Abiski"
-        josef.original.should == "Józef Żabiński"
-        josef.original(:ascii => true).should == "Jozef Zabinski"
-        josef = Name.new('Józef', 'Żabiński', :ascii => true)
-        josef.name.should == "Jozef Zabinski"
-        bu = Name.new('Bǔ Xiángzhì')
-        bu.name.should == "B. Xiángzhì"
-        eric = Name.new('éric', 'PRIÉ')
-        eric.rname.should == "Prié, Éric"
-        eric.rname.encoding.name.should == "UTF-8"
+        ICU::Name.new('éric', 'PRIÉ').name.should == "Éric Prié"
+        ICU::Name.new('BARTŁOMIEJ', 'śliwa').name.should == "Bartłomiej Śliwa"
+        ICU::Name.new(' 渡井美代子').name.should == ""
         eric = Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
         eric.rname.should == "Prié, Éric"
         eric.rname.encoding.name.should == "UTF-8"
         eric.original.should == "éric PRIÉ"
-        eric.original(:ascii => true).should == "eric PRIE"
         eric.original.encoding.name.should == "UTF-8"
-        eric.name(:ascii => true).should == "Eric Prie"
-        eric_ascii = Name.new('éric', 'PRIÉ', :ascii => true)
-        eric_ascii.name.should == "Eric Prie"
+        eric.rname(:chars => "US-ASCII").should == "Prie, Eric"
+        eric.original(:chars => "US-ASCII").should == "eric PRIE"
+        joe = Name.new('Józef', 'Żabiński')
+        joe.rname.should == "Żabiński, Józef"
+        joe.rname(:chars => "ISO-8859-1").should == "Zabinski, Józef"
+        joe.rname(:chars => "US-ASCII").should == "Zabinski, Jozef"
         eric.match('Éric', 'Prié').should be_true
         eric.match('Eric', 'Prie').should be_false
-        eric.match('Eric', 'Prie', :ascii => true).should be_true
+        eric.match('Eric', 'Prie', :chars => "US-ASCII").should be_true
+        joe.match('Józef', 'Zabinski').should be_false
+        joe.match('Józef', 'Zabinski', :chars => "ISO-8859-1").should be_true
       end
     end
 
@@ -244,7 +240,7 @@ module ICU
 
     context "transliteration" do
       before(:all) do
-        @opt = { :ascii => true }
+        @opt = { :chars => "US-ASCII" }
       end
 
       it "should be a no-op for names that already ASCII" do
@@ -267,12 +263,6 @@ module ICU
         name.first(@opt).should == 'Eric'
         name.last(@opt).should == 'Prie'
       end
-
-      it "should work for the constructor as well as accessors" do
-        name = Name.new('Gearóidín', 'Uí Laighléis', @opt)
-        name.first.should == 'Gearoidin'
-        name.last.should == 'Ui Laighleis'
-      end
     end
 
     context "constuction corner cases" do
@@ -280,7 +270,6 @@ module ICU
         Name.new('Orr').name.should == 'Orr'
         Name.new('Orr').rname.should == 'Orr'
         Name.new('Uí Laighléis').rname.should == 'Laighléis, Uí'
-        Name.new('', 'Uí Laighléis', :ascii => true).last.should == 'Ui Laighleis'
         Name.new('').name.should == ''
         Name.new('').rname.should == ''
         Name.new.name.should == ''
@@ -367,8 +356,8 @@ module ICU
       end
 
       it "the matching of accented characters can be relaxed" do
-        Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laíghleis', :ascii => true).should be_true
-        Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona', :ascii => true).should be_true
+        Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laíghleis', :chars => "US-ASCII").should be_true
+        Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona', :chars => "US-ASCII").should be_true
       end
     end
   end

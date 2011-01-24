@@ -8,7 +8,7 @@ For ruby 1.9.2 and above.
 
   gem install icu_name
 
-It depends on active_support and i18n.
+It depends on _active_support_ and _i18n_.
 
 == Names
 
@@ -23,84 +23,88 @@ To create a name object, supply both the first and second names separately to th
 
 Capitalisation, white space and punctuation will all be automatically corrected:
 
-  robert.name                                    # => 'Robert J. Fischer'
-  robert.rname                                   # => 'Fischer, Robert J.'  (reversed name)
+  robert.name                                             # => 'Robert J. Fischer'
+  robert.rname                                            # => 'Fischer, Robert J.'  (reversed name)
 
 The input text, without any changes apart from white-space cleanup, is returned by the _original_ method:
 
-  robert.original                                # => 'robert j FISHER'
+  robert.original                                         # => 'robert j FISHER'
 
 To avoid ambiguity when either the first or second names consist of multiple words, it is better to
 supply the two separately, if known. However, the full name can be supplied alone to the constructor
 and a guess will be made as to the first and last names.
 
   bobby = ICU::Name.new(' bobby fischer ')
-  
-  bobby.first                                    # => 'Bobby'
-  bobby.last                                     # => 'Fischer'
+
+  bobby.first                                             # => 'Bobby'
+  bobby.last                                              # => 'Fischer'
 
 Names will match even if one is missing middle initials or if a nickname is used for one of the first names.
 
-  bobby.match('Robert J.', 'Fischer')            # => true
+  bobby.match('Robert J.', 'Fischer')                     # => true
 
 Note that the class is aware of only common nicknames (e.g. _Bobby_ and _Robert_, _Bill_ and _William_, etc), not all possibilities.
 
 Supplying the _match_ method with strings is equivalent to instantiating a Name instance with the same
 strings and then matching it. So, for example the following are equivalent:
 
-  robert.match('R.', 'Fischer')                  # => true
-  robert.match(ICU::Name.new('R.', 'Fischer'))   # => true
+  robert.match('R.', 'Fischer')                           # => true
+  robert.match(ICU::Name.new('R.', 'Fischer'))            # => true
 
 The inital _R_, for example, matches the first letter of _Robert_. However, nickname matches will not
 always work with initials. In the next example, the initial _R_ does not match the first letter _B_ of the
 nickname _Bobby_.
 
-  bobby.match('R. J.', 'Fischer')                # => false
+  bobby.match('R. J.', 'Fischer')                         # => false
 
 Some of the ways last names are canonicalised are illustrated below:
 
-  ICU::Name.new('John', 'O Reilly').last         # => "O'Reilly"
-  ICU::Name.new('dave', 'mcmanus').last          # => "McManus"
+  ICU::Name.new('John', 'O Reilly').last                  # => "O'Reilly"
+  ICU::Name.new('dave', 'mcmanus').last                   # => "McManus"
 
 == Characters and Encoding
 
-The class can only cope with Western European letter characters, including the accented ones in Latin-1.
-It's various accessors (_first_, _last_, _name_, _rname_, _to_s_, _original_) always return strings
-encoded in UTF-8, no matter what the input encoding.
+The class can only cope with Latin characters, including those with diacritics (accents).
+Along with hyphens and single quotes (which represent apostophes) letters in ISO-8859-1
+(e.g. "a", "è", "Ö") and letters outside ISO-8859-1 which are decomposable into a US-ASCII
+character plus one or more diacritics (e.g. "ł" or "Ś") are preserved, while everything
+else is removed.
 
-  eric = ICU::Name.new('éric', 'PRIÉ')
-  eric.rname                                     # => "Prié, Éric"
-  eric.rname.encoding.name                       # => "UTF-8"
+  ICU::Name.new('éric', 'PRIÉ').name                      # => "Éric Prié"
+  ICU::Name.new('BARTŁOMIEJ', 'śliwa').name               # => "Bartłomiej Śliwa"
+  ICU::Name.new(' 渡井美代子').name                            # => ""
+
+The various accessors (_first_, _last_, _name_, _rname_, _to_s_, _original_) always return
+strings encoded in UTF-8, no matter what the input encoding.
 
   eric = ICU::Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
-  eric.rname                                     # => "Prié, Éric"
-  eric.rname.encoding.name                       # => "UTF-8"
-  eric.original                                  # => "éric PRIÉ"
-  eric.original.encoding.name                    # => "UTF-8"
+  eric.rname                                              # => "Prié, Éric"
+  eric.rname.encoding.name                                # => "UTF-8"
+  eric.original                                           # => "éric PRIÉ"
+  eric.original.encoding.name                             # => "UTF-8"
 
-Currently, all characters outside the Latin-1 range are removed as if they wern't there.
+Accented letters can be transliterated into their US-ASCII counterparts by setting the
+_chars_ option, which is available in all accessors. For example:
 
-  ICU::Name.new('Józef Żabiński').name           # => "Józef Abiski"
-  ICU::Name.new('Bǔ Xiángzhì').name              # => "B. Xiángzhì"
+  eric.rname(:chars => "US-ASCII")                        # => "Prie, Eric"
+  eric.original(:chars => "US-ASCII")                     # => "eric PRIE"
 
-Accented Latin-1 characters can be transliterated into their ascii counterparts by setting the
-_ascii_ option to a true value.
+Also possible is the preservation of ISO-8859-1 characters, but the transliteration of
+all other accented characters:
 
-  eric.name(:ascii => true)                      # => "Eric Prie"
+  joe = Name.new('Józef', 'Żabiński')
+  joe.rname                                               # => "Żabiński, Józef"
+  joe.rname(:chars => "ISO-8859-1")                       # => "Zabinski, Józef"
+  joe.rname(:chars => "US-ASCII")                         # => "Zabinski, Jozef"
 
-This works with all the other accessors and also with the constructor:
+Note that the character encoding of the strings returned is still UTF-8 in all cases.
+The same option also relaxes the need for accented characters to match exactly:
 
-  eric_ascii = ICU::Name.new('éric', 'PRIÉ', :ascii => true)
-  eric_ascii.name                                # => "Eric Prie"
-  jozef_ascii = ICU::Name.new('Józef', 'Żabiński', :ascii => true).name
-  jozef_ascii.name                               # => "Jozef Zabinski"
-  
-The option also relaxes the need for accented characters to match exactly:
+  eric.match('Eric', 'Prie')                              # => false
+  eric.match('Eric', 'Prie', :chars => "US-ASCII")        # => true
+  joe.match('Józef', 'Zabinski')                          # => false
+  joe.match('Józef', 'Zabinski', :chars => "ISO-8859-1")  # => true
 
-  eric.match('Éric', 'Prié')                     # => true
-  eric.match('Eric', 'Prie')                     # => false
-  eric.match('Eric', 'Prie', :ascii => true)     # => true
-  
 == Author
 
 Mark Orr, rating officer for the Irish Chess Union (ICU[http://icu.ie]).
