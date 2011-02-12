@@ -18,7 +18,10 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "i18n", ">= 0.5.0"
 
   s.add_development_dependency "bundler", ">= 1.0.7"
-  s.add_development_dependency "rspec"
+  s.add_development_dependency "rspec", "~> 2.5"
+  s.add_development_dependency "ZenTest", "~> 4.4.2"
+  s.add_development_dependency "autotest-growl", "~> 0.2.9"
+  s.add_development_dependency "autotest-fsevent", "~> 0.2.4"
 
   s.files            = Dir.glob("lib/**/*.rb") + Dir.glob("spec/**/*.rb") + %w(LICENCE README.rdoc)
   s.extra_rdoc_files = %w(LICENCE README.rdoc)
