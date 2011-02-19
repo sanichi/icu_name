@@ -66,7 +66,7 @@ module ICU
 
     # Save the original inputs without any cleanup other than whitespace.
     def originalize
-      @original = "#{@name1} #{@name2}"
+      @original = @name2 == '' ? @name1.clone : "#{@name2.strip}, #{@name1.strip}"
       @original.strip!
       @original.gsub!(/\s+/, ' ')
     end

@@ -29,7 +29,7 @@ module ICU
       end
 
       it "#original returns the original data" do
-        @simple.original.should == 'mark j l ORR'
+        @simple.original.should == 'ORR, mark j l'
       end
 
       it "#match returns true if and only if two names match" do
@@ -72,10 +72,10 @@ module ICU
         eric = Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
         eric.rname.should == "Prié, Éric"
         eric.rname.encoding.name.should == "UTF-8"
-        eric.original.should == "éric PRIÉ"
+        eric.original.should == "PRIÉ, éric"
         eric.original.encoding.name.should == "UTF-8"
         eric.rname(:chars => "US-ASCII").should == "Prie, Eric"
-        eric.original(:chars => "US-ASCII").should == "eric PRIE"
+        eric.original(:chars => "US-ASCII").should == "PRIE, eric"
         joe = Name.new('Józef', 'Żabiński')
         joe.rname.should == "Żabiński, Józef"
         joe.rname(:chars => "ISO-8859-1").should == "Zabinski, Józef"
@@ -183,8 +183,9 @@ module ICU
 
     context "the original input" do
       it "should be the original text unaltered except for white space" do
-        Name.new(' Mark   j l   ', ' ORR  ').original.should == 'Mark j l ORR'
-        Name.new('Józef', 'Żabiński').original.should == 'Józef Żabiński'
+        Name.new(' Mark   j l   ', ' ORR  ').original.should == 'ORR, Mark j l'
+        Name.new(' Mark  J.  L.  Orr ').original.should == 'Mark J. L. Orr'
+        Name.new('Józef', 'Żabiński').original.should == 'Żabiński, Józef'
         Name.new('Ui  Laigleis,Gearoidin').original.should == 'Ui Laigleis,Gearoidin'
       end
     end
