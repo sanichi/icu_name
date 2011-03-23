@@ -245,6 +245,7 @@ module ICU
 Abdul Abul
 Alexander Alex
 Anandagopal Ananda
+Andrew Andy
 Anne Ann
 Anthony Tony
 Benjamin Ben
