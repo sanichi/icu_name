@@ -3,6 +3,17 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 module ICU
   describe Name do
+    def load_alt_test(*types)
+      types.each do |type|
+        file = File.expand_path(File.dirname(__FILE__) + "/../config/test_#{type}_alts.yaml")
+        Name.load_alternatives(type, file)
+      end
+    end
+
+    def alt_compilations(type)
+      Name.alt_compilations(type)
+    end
+
     context "public methods" do
       before(:each) do
         @simple = Name.new('mark j l', 'ORR')
@@ -68,7 +79,7 @@ module ICU
       it "characters and encoding" do
         ICU::Name.new('éric', 'PRIÉ').name.should == "Éric Prié"
         ICU::Name.new('BARTŁOMIEJ', 'śliwa').name.should == "Bartłomiej Śliwa"
-        ICU::Name.new(' 渡井美代子').name.should == ""
+        ICU::Name.new('Սմբատ', 'Լպուտյան').name.should == ""
         eric = Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
         eric.rname.should == "Prié, Éric"
         eric.rname.encoding.name.should == "UTF-8"
@@ -244,7 +255,7 @@ module ICU
         @opt = { :chars => "US-ASCII" }
       end
 
-      it "should be a no-op for names that already ASCII" do
+      it "should be a no-op for names that are already ASCII" do
         name = Name.new('Mark J. L.', 'Orr')
         name.first(@opt).should == 'Mark J. L.'
         name.last(@opt).should == 'Orr'
@@ -325,6 +336,21 @@ module ICU
         Name.new('Mick', 'Orr').match('Mike', 'Orr').should be_true
       end
 
+      it "should handle ambiguous nicknames" do
+        Name.new('Gerry', 'Orr').match('Gerald', 'Orr').should be_true
+        Name.new('Gerry', 'Orr').match('Gerard', 'Orr').should be_true
+        Name.new('Gerard', 'Orr').match('Gerald', 'Orr').should be_false
+      end
+
+      it "should by default be cautious about misspellings" do
+        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_false
+        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_false
+      end
+
+      it "should by default have no conditional matches" do
+        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_false
+      end
+
       it "should not mix up nick names" do
         Name.new('David', 'Orr').match('Bill', 'Orr').should be_false
       end
@@ -343,6 +369,11 @@ module ICU
         Name.new('Alan', 'McDonagh').match('Alan', 'MacDonagh').should be_true
         Name.new('Darko', 'Polimac').match('Darko', 'Polimc').should be_false
       end
+
+      it "should by defaut have no conditional matches" do
+        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_false
+        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_false
+      end
     end
 
     context "matches involving accented characters" do
@@ -359,6 +390,174 @@ module ICU
       it "the matching of accented characters can be relaxed" do
         Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laíghleis', :chars => "US-ASCII").should be_true
         Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona', :chars => "US-ASCII").should be_true
+      end
+    end
+
+    context "configuring new first name alternatives" do
+      before(:all) do
+        load_alt_test(:first)
+      end
+
+      it "should match some spelling errors" do
+        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_true
+        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_true
+      end
+
+      it "should handle conditional matches" do
+        Name.new('Sean', 'Collins').match('John', 'Collins').should be_false
+        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_true
+      end
+    end
+
+    context "configuring new last name alternatives" do
+      before(:all) do
+        load_alt_test(:last)
+      end
+
+      it "should match some spelling errors" do
+        Name.new('William', 'Ffrench').match('William', 'French').should be_true
+      end
+
+      it "should handle conditional matches" do
+        Name.new('Mark', 'Quinn').match('Mark', 'Benjamin').should be_false
+        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_true
+        Name.new('Oisin', "O'Siochru").match('Oisin', 'King').should be_false
+        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_true
+      end
+
+      it "should allow some awesome matches" do
+        Name.new('debbie quinn').match('Deborah', 'Benjamin').should be_true
+        Name.new('french, william').match('Bill', 'Ffrench').should be_true
+        Name.new('Oissine', 'Murphy').match('Oissine', 'Murchadha').should be_true
+      end
+    end
+
+    context "configuring new first and new last name alternatives" do
+      before(:all) do
+        load_alt_test(:first, :last)
+      end
+
+      it "should allow some awesome matches" do
+        Name.new('french, steven').match('Stephen', 'Ffrench').should be_true
+        Name.new('Patrick', 'Murphy').match('Padraic', 'Murchadha').should be_true
+      end
+    end
+
+    context "reverting to the default configuration" do
+      before(:all) do
+        load_alt_test(:first, :last)
+      end
+
+      it "should not match so boldly after reverting" do
+        Name.new('french, steven').match('Stephen', 'Ffrench').should be_true
+        Name.load_alternatives(:first)
+        Name.new('Patrick', 'Murphy').match('Padraic', 'Murchadha').should be_false
+        Name.new('Patrick', 'Murphy').match('Patrick', 'Murchadha').should be_true
+        Name.load_alternatives(:last)
+        Name.new('Patrick', 'Murphy').match('Patrick', 'Murchadha').should be_false
+      end
+    end
+
+    context "name alternatives with default configuration" do
+      it "should show common nicknames" do
+        Name.new('William', 'Ffrench').alternatives(:first).should =~ %w{Bill Willy Willie Will}
+        Name.new('Bill', 'Ffrench').alternatives(:first).should =~ %w{William Willy Will Willie}
+        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Steve}
+        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve}
+        Name.new('Michael Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve Mike Mick Mikey}
+        Name.new('Stephen M.', 'Ffrench').alternatives(:first).should =~ %w{Steve}
+        Name.new('S.', 'Ffrench').alternatives(:first).should =~ []
+        Name.new('Sean', 'Bradley').alternatives(:first).should =~ []
+      end
+
+      it "should not have any last name alternatives" do
+        Name.new('William', 'Ffrench').alternatives(:last).should =~ []
+        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ []
+        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ []
+        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ []
+      end
+    end
+
+    context "name alternatives with more adventurous configuration" do
+      before(:all) do
+        load_alt_test(:first, :last)
+      end
+
+      it "should show additional nicknames" do
+        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Stephen Steve}
+        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Stephen Mike', 'Ffrench').alternatives(:first).should =~ %w{Michael Mick Mickie Micky Mikey Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Sean', 'Bradley').alternatives(:first).should =~ %w{John}
+        Name.new('Sean', 'McDonagh').alternatives(:first).should =~ []
+        Name.new('John', 'Bradley').alternatives(:first).should =~ %w{Sean Johnny}
+      end
+
+      it "should have some last name alternatives" do
+        Name.new('William', 'Ffrench').alternatives(:last).should =~ %w{French}
+        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King}
+        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ %w{Murchadha}
+        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ %w{Benjamin}
+        Name.new('Mark', 'Quinn').alternatives(:last).should =~ []
+        Name.new('Debbie', 'Quinn-French').alternatives(:last).should =~ %w{Benjamin Ffrench}
+      end
+    end
+
+    context "number of alternative compilations" do
+      before(:all) do
+        Name.reset_alternatives
+      end
+
+      it "should be no more than necessary" do
+        alt_compilations(:first).should == 0
+        alt_compilations(:last).should == 0
+        Name.new('William', 'Ffrench').match('Bill', 'French')
+        alt_compilations(:first).should == 1
+        alt_compilations(:last).should == 1
+        Name.new('Debbie', 'Quinn').match('Deborah', 'Benjamin')
+        alt_compilations(:first).should == 1
+        alt_compilations(:last).should == 1
+        load_alt_test(:first)
+        alt_compilations(:first).should == 2
+        alt_compilations(:last).should == 1
+        load_alt_test(:last)
+        alt_compilations(:first).should == 2
+        alt_compilations(:last).should == 2
+        Name.new('William', 'Ffrench').match('Bill', 'French')
+        Name.new('Debbie', 'Quinn').match('Deborah', 'Benjamin')
+        Name.new('Mark', 'Orr').alternatives(:first)
+        Name.new('Mark', 'Orr').alternatives(:last)
+        alt_compilations(:first).should == 2
+        alt_compilations(:last).should == 2
+      end
+    end
+
+    context "immutability" do
+      before(:each) do
+        @mark = ICU::Name.new('Màrk', 'Orr')
+      end
+
+      it "there are no setters" do
+        lambda { @mark.first = "Malcolm" }.should raise_error(/undefined/)
+        lambda { @mark.last = "Dickie" }.should raise_error(/undefined/)
+        lambda { @mark.original = "mark orr" }.should raise_error(/undefined/)
+      end
+
+      it "should prevent accidentally access to the instance variables" do
+        @mark.first.downcase!
+        @mark.first.should == "Màrk"
+        @mark.last.downcase!
+        @mark.last.should == "Orr"
+        @mark.original.downcase!
+        @mark.original.should == "Orr, Màrk"
+      end
+
+      it "should prevent accidentally access to the instance variables when transliterating" do
+        @mark.first(:chars => "US-ASCII").downcase!
+        @mark.first.should == "Màrk"
+        @mark.last(:chars => "US-ASCII").downcase!
+        @mark.last.should == "Orr"
+        @mark.original(:chars => "US-ASCII").downcase!
+        @mark.original.should == "Orr, Màrk"
       end
     end
   end

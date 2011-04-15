@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "autotest-growl", "~> 0.2.9"
   s.add_development_dependency "autotest-fsevent", "~> 0.2.4"
 
-  s.files            = Dir.glob("lib/**/*.rb") + Dir.glob("spec/**/*.rb") + %w(LICENCE README.rdoc)
+  s.files            = Dir.glob("lib/**/*.rb") + Dir.glob("spec/**/*.rb") + Dir.glob("config/*.yaml") + %w(LICENCE README.rdoc)
   s.extra_rdoc_files = %w(LICENCE README.rdoc)
   s.require_path     = 'lib'
 end

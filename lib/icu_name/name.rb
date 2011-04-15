@@ -5,31 +5,42 @@ require 'active_support/core_ext/string/multibyte'
 
 module ICU
   class Name
+    # Revert to the default sets of alternative names.
+    def self.reset_alternatives
+      @@alts = Hash.new
+      @@cmps = Hash.new
+    end
 
-    # Construct from one or two strings or any objects that have a to_s method.
+    # Perform a reset when the class is first loaded.
+    self.reset_alternatives
+
+    # Construct a new name from one or two strings or any objects that have a to_s method.
     def initialize(name1='', name2='')
       @name1 = Util.to_utf8(name1.to_s)
       @name2 = Util.to_utf8(name2.to_s)
       originalize
       canonicalize
+      @first.freeze
+      @last.freeze
+      @original.freeze
     end
-    
+
     # Original text getter.
     def original(opts={})
       return transliterate(@original, opts[:chars]) if opts[:chars]
-      @original
+      @original.dup
     end
 
     # First name getter.
     def first(opts={})
       return transliterate(@first, opts[:chars]) if opts[:chars]
-      @first
+      @first.dup
     end
 
     # Last name getter.
     def last(opts={})
       return transliterate(@last, opts[:chars]) if opts[:chars]
-      @last
+      @last.dup
     end
 
     # Return a complete name, first name first, no comma.
@@ -50,7 +61,7 @@ module ICU
       name
     end
 
-    # Convert object to a string.
+    # Convert to a string (same as rname).
     def to_s(opts={})
       rname(opts)
     end
@@ -59,6 +70,17 @@ module ICU
     def match(name1='', name2='', opts={})
       other = Name.new(name1, name2)
       match_first(first(opts), other.first(opts)) && match_last(last(opts), other.last(opts))
+    end
+
+    # Load a set of first or last name alternatives. If the YAML file name is absent,
+    # the default set is loaded. <tt>type</tt> should be <tt>:first</tt> or <tt>:last</tt>.
+    def self.load_alternatives(type, file=nil)
+      compile_alts(check_type(type), file, true)
+    end
+
+    # Show first name or last name alternatives.
+    def alternatives(type)
+      get_alts(check_type(type))
     end
 
     # :stopdoc:
@@ -70,7 +92,7 @@ module ICU
       @original.strip!
       @original.gsub!(/\s+/, ' ')
     end
-    
+
     # Transliterate characters to ASCII or Latin1.
     def transliterate(str, chars='US-ASCII')
       case chars
@@ -154,6 +176,10 @@ module ICU
       names
     end
 
+    # Check the type argument to the public methods.
+    def check_type(type) self.class.instance_eval { check_type(type) }; end
+    def self.check_type(type) type = type.to_s == "last" ? :last : :first; end
+
     # Match a complete first name.
     def match_first(first1, first2)
       # Is this one a walk in the park?
@@ -166,8 +192,9 @@ module ICU
       # Get the long list and the short list.
       long, short = first1.size >= first2.size ? [first1, first2] : [first2, first1]
 
-      # The short one must be a "subset" of the long one.
-      # An extra condition must also be satisfied.
+      # The short one must be a "subset" of the long one. An extra condition must also be satisfied:
+      # either there has to be at least one match not involving initials or the first names must match.
+      # For example "M. J." matches "Mark" but not  "John".
       extra = false
       (0..long.size-1).each do |i|
         lword = long.shift
@@ -186,6 +213,7 @@ module ICU
     # Match a complete last name.
     def match_last(last1, last2)
       return true if last1 == last2
+      return true if match_alt(:last, last1, last2)
       [last1, last2].each do |last|
         last.downcase!            # case insensitive
         last.gsub!(/\bmac/, 'mc') # MacDonaugh and McDonaugh
@@ -211,74 +239,73 @@ module ICU
       initials = 0
       initials+= 1 if first1.match(/^[A-Z\u{c0}-\u{de}]\.?$/)
       initials+= 1 if first2.match(/^[A-Z\u{c0}-\u{de}]\.?$/)
-      return initials if first1 == first2
-      return 0 if initials == 0 && match_nick_name(first1, first2)
-      return -1 unless initials > 0
-      return initials if first1[0] == first2[0]
+      return initials if first1 == first2                             # "W." and "W." or "William" and "William"
+      return 0 if initials == 0 && match_alt(:first, first1, first2)  # "William"" and "Bill"
+      return -1 unless initials > 0                                   # "William" and "Patricia"
+      return initials if first1[0] == first2[0]                       # "W." and "William" or "W." and "W"
       -1
     end
 
-    # Match two first names that might be equivalent nicknames.
-    def match_nick_name(nick1, nick2)
-      compile_nick_names unless @@nc
-      code1 = @@nc[nick1]
-      return false unless code1
-      code1 == @@nc[nick2]
+    # Match two names that might be equivalent due to nicknames, misspellings, changed married names etc.
+    def match_alt(type, nam1, nam2)
+      self.class.compile_alts(type)
+      return false unless nams = @@alts[type][nam1]
+      return false unless cond = nams[nam2]
+      return true if cond == true
+      cond.match(type == :first ? @last : @first)
     end
 
-    # Compile the nick names code hash when matching nick names is first attempted.
-    def compile_nick_names
-      @@nc = Hash.new
+    # Return an array of alternative first or second names (not including the original name).
+    # Allow for double barrelled last names or multiple first names.
+    def get_alts(type)
+      self.class.compile_alts(type)
+      name = self.send(type)
+      names = name.split(/[- ]/)
+      names.push(name) if names.length > 1
+      target = type == :first ? @last : @first
+      alts = Array.new
+      names.each do |n|
+        next unless @@alts[type][n]
+        @@alts[type][n].each_pair do |k, v|
+          alts.push k if v == true || v.match(target)
+        end
+      end
+      alts
+    end
+
+    # Compile an alternative names hash (for either first names or last names) before matching is first attempted.
+    def self.compile_alts(type, file=nil, force=false)
+      return if @@alts[type] && !force
+      file ||= File.expand_path(File.dirname(__FILE__) + "/../../config/#{type}_alternatives.yaml")
+      data = YAML.load(File.open file)
+      @@cmps[type] ||= 0
+      @@alts[type] = Hash.new
       code = 1
-      @@nl.each do |nicks|
-        nicks.each do |n|
-          throw "duplicate name #{n}" if @@nc[n]
-          @@nc[n] = code
+      data.each do |alts|
+        cond = true
+        alts.reject! do |a|
+          if a.instance_of?(Regexp)
+            cond = a
+          else
+            false
+          end
+        end
+        alts.each do |name|
+          alts.each do |other|
+            unless other == name
+              @@alts[type][name] ||= Hash.new
+              @@alts[type][name][other] = cond
+            end
+          end
         end
         code+= 1
       end
+      @@cmps[type] += 1
     end
 
-    # A array of data for matching nicknames and also a few common misspellings.
-    @@nc = nil
-    @@nl = <<EOF.split(/\n/).reject{|x| x.length == 0 }.map{|x| x.split(' ')}
-Abdul Abul
-Alexander Alex
-Anandagopal Ananda
-Andrew Andy
-Anne Ann
-Anthony Tony
-Benjamin Ben
-Catherine Cathy Cath
-Daniel Danial Danny Dan
-David Dave
-Deborah Debbie
-Des Desmond
-Eamonn Eamon
-Edward Eddie Ed
-Eric Erick Erik
-Frederick Frederic Fred
-Gerald Gerry
-Gerhard Gerard Ger
-James Jim
-Joanna Joan Joanne
-John Johnny
-Jonathan Jon
-Kenneth Ken Kenny
-Michael Mike Mick Micky
-Nicholas Nick Nicolas
-Nicola Nickie Nicky
-Patrick Pat Paddy
-Peter Pete
-Philippe Philip Phillippe Phillip
-Rick Ricky
-Robert Bob Bobby
-Samual Sam Samuel
-Stefanie Stef
-Stephen Steven Steve
-Terence Terry
-Thomas Tom Tommy
-William Will Willy Willie Bill
-EOF
+    # Return the number of YAML file compilations (for testing).
+    def self.alt_compilations(type)
+      @@cmps[check_type(type)] || 0
+    end
   end
 end
