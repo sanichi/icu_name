@@ -278,7 +278,7 @@ module ICU
       return if @@alts[type] && !force
       unless data
         file = File.expand_path(File.dirname(__FILE__) + "/../../config/#{type}_alternatives.yaml")
-        data = YAML.load(File.open file)
+        data = File.open(file) { |fd| YAML.load(fd) }
       end
       @@cmps[type] ||= 0
       @@alts[type] = Hash.new

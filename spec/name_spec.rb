@@ -6,7 +6,7 @@ module ICU
     def load_alt_test(*types)
       types.each do |type|
         file = File.expand_path(File.dirname(__FILE__) + "/../config/test_#{type}_alts.yaml")
-        data = YAML.load(File.open file)
+        data = File.open(file) { |fd| YAML.load(fd) }
         Name.load_alternatives(type, data)
       end
     end
