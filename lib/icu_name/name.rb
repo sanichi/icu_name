@@ -274,10 +274,12 @@ module ICU
     end
 
     # Compile an alternative names hash (for either first names or last names) before matching is first attempted.
-    def self.compile_alts(type, file=nil, force=false)
+    def self.compile_alts(type, data=nil, force=false)
       return if @@alts[type] && !force
-      file ||= File.expand_path(File.dirname(__FILE__) + "/../../config/#{type}_alternatives.yaml")
-      data = YAML.load(File.open file)
+      unless data
+        file = File.expand_path(File.dirname(__FILE__) + "/../../config/#{type}_alternatives.yaml")
+        data = YAML.load(File.open file)
+      end
       @@cmps[type] ||= 0
       @@alts[type] = Hash.new
       code = 1

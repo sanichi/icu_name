@@ -121,22 +121,22 @@ The same option also relaxes the need for accented characters to match exactly:
 
 We saw above how _Bobby_ and _Robert_ were able to match because, by default, the
 matcher is aware of some common English nicknames. These name alternatives can be
-customised to handle additional nick names and other types of alternative names
-such as common spelling mistakes and name changes.
+customised to handle additional nicknames and other types of alternative names
+such as common spelling error and player name changes.
 
-The alternative names are specified in two YAML files, one for first names and
-one for last names. Each YAML file represents an array and each element in the
-array is an array representing a set of alternative names. Here, for example,
-are some of the default first name alternatives:
+The alternative names consist of two arrays, one for first names and
+one for last names. Each array element is itself an array of strings
+representing a set of equivalent names. Here, for example, are some
+of the default first name alternatives:
 
-  [Anthony, Tony]
-  [James, Jim, Jimmy]
-  [Michael, Mike, Mick, Mikey]
-  [Robert, Bob, Bobby]
-  [Stephen, Steve]
-  [Steven, Steve]
-  [Thomas, Tom, Tommy]
-  [William, Will, Willy, Willie, Bill]
+  ["Anthony", "Tony"]
+  ["James", "Jim", "Jimmy"]
+  ["Michael", "Mike", "Mick", "Mikey"]
+  ["Robert", "Bob", "Bobby"]
+  ["Stephen", "Steve"]
+  ["Steven", "Steve"]
+  ["Thomas", "Tom", "Tommy"]
+  ["William", "Will", "Willy", "Willie", "Bill"]
 
 The first of these means that _Anthony_ and _Tony_ are considered equivalent and can match.
 
@@ -149,29 +149,35 @@ same group, they don't match each other.
   Name.new("Stephen", "Hanly").match("Steve", "Hanly")        # => true
   Name.new("Stephen", "Hanly").match("Steven", "Hanly")       # => false
 
-To customize alternative name behaviour, prepare YAML files with your chosen alternatives
-and then replace the default alternatives like this:
+To change alternative name behaviour, you can replace the default alternatives
+with a customized set perhaps stored in a database or a YAML file, as illustrated below:
 
-  Name.load_alternatives(:first, "my_first_name_alternatives.yaml")
-  Name.load_alternatives(:last, "my_last_name_alternatives.yaml")
+  data = YAML.load(File open "my_last_name_alternatives.yaml")
+  Name.load_alternatives(:first, data)
+  data = YAML.load(File open "my_first_name_alternatives.yaml")
+  Name.load_alternatives(:first, data)
 
 An example of one way in which you might want to customize the alternatives is to
 cater for common spelling mistakes such as _Steven_ and _Stephen_. These two names
 don't match by default, but you can make them so by replacing the two default rules:
 
-  [Stephen, Steve]
-  [Steven, Steve]
+  ["Stephen", "Steve"]
+  ["Steven", "Steve"]
 
 with the following single rule:
 
-  [Stephen, Steven, Steve]
+  ["Stephen", "Steven", "Steve"]
 
 so that now:
 
   Name.new("Stephen", "Hanly").match("Steven", "Hanly")       # => true
 
-Another use is to cater for English and Irish versions of the same name. For example,
-for last names:
+This kind of rule risks producing false positives - you must judge
+carefully whether that risk is outweighed by the benefits of being
+able to overcome spelling mistakes in the context of your application.
+
+Another use is to cater for English and Irish versions of the same name.
+For example, for last names:
 
   [Murphy, Murchadha]
 
@@ -181,25 +187,26 @@ or for first names, including spelling variations:
 
 == Conditional Alternatives
 
-Normally, entries in the two YAML files are just lists of alternative names. There is one
+Normally, entries in the two arrays are just lists of alternative names. There is one
 exception to this however, when one of the entries (it doesn't matter which one but,
 by convention, the last one) is a regular expression. Here is an example that might
 be added to the last name alternatives:
 
-  [Quinn, Benjamin, !ruby/regexp /^(Debbie|Deborah)$/]
+  ["Quinn", "Benjamin", /^(Debbie|Deborah)$/]
 
 What this means is that the last names _Quinn_ and _Benjamin_ match but only when the
-first name matches the regular expression.
+first name matches the given regular expression. In this case it caters for a female
+whose last name changed after marriage.
 
   Name.new("Debbie", "Quinn").match("Debbie", "Benjamin")     # => true
   Name.new("Mark", "Quinn").match("Mark", "Benjamin")         # => false
 
 Another example, this time for first names, is:
 
-  [Sean, John, !ruby/regexp /^Bradley$/]
+  ["Sean", "John", /^Bradley$/]
 
 This caters for an individual who is known by two normally unrelated first names.
-We only want these two names to match for that individual and no others.
+The two first names only match when the last name is _Bradley_.
 
   Name.new("John", "Bradley").match("Sean", "Bradley")        # => true
   Name.new("John", "Alfred").match("Sean", "Alfred")          # => false
