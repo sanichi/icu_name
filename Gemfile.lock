@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    icu_name (1.0.2)
+    icu_name (1.0.3)
       activesupport (>= 3.0.6)
       i18n (>= 0.5.0)
 

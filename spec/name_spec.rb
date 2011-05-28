@@ -108,14 +108,28 @@ module ICU
       end
     end
 
-    context "last names involving a quote" do
-      it "should be handled correctly" do
+    context "last names involving single quote-like characters" do
+      before(:each) do
+        @una = Name.new('Una', "O'Boyle")
+      end
+
+      it "should use apostrophe (0027) as the canonical choice" do
         Name.new('una', "O'boyle").name.should == "Una O'Boyle"
+        Name.new('Una', "o’boyle").name.should == "Una O'Boyle"
         Name.new('jonathan', 'd`arcy').name.should == "Jonathan D'Arcy"
-        Name.new('erwin e', "L'AMI").name.should == "Erwin E. L'Ami"
+        Name.new('erwin e', "L′AMI").name.should == "Erwin E. L'Ami"
         Name.new('cormac', "o brien").name.should == "Cormac O'Brien"
         Name.new('türko', "o özgür").name.should == "Türko O'Özgür"
-        Name.new('türko', "l`özgür").name.should == "Türko L'Özgür"
+        Name.new('türko', "l‘özgür").name.should == "Türko L'Özgür"
+      end
+
+      it "backticks (0060), opening (2018) and closing (2019) single quotes, primes (2032) and high reversed 9 quotes (201B) should be equivalent" do
+        @una.match("Una", "O`Boyle").should be_true
+        @una.match("Una", "O’Boyle").should be_true
+        @una.match("Una", "O‘Boyle").should be_true
+        @una.match("Una", "O′Boyle").should be_true
+        @una.match("Una", "O‛Boyle").should be_true
+        @una.match("Una", "O‚Boyle").should be_false
       end
     end
 
@@ -471,9 +485,13 @@ module ICU
         Name.new('Sean', 'Bradley').alternatives(:first).should =~ []
       end
 
+      it "should have automatic last name alternatives for apostrophes to cater for FIDE's habits" do
+        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ ["O`Siochru"]
+        Name.new('Erwin E.', "L`Ami").alternatives(:last).should =~ ["L`Ami"]
+      end
+
       it "should not have any last name alternatives" do
         Name.new('William', 'Ffrench').alternatives(:last).should =~ []
-        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ []
         Name.new('Oissine', 'Murphy').alternatives(:last).should =~ []
         Name.new('Debbie', 'Quinn').alternatives(:last).should =~ []
       end
@@ -495,7 +513,7 @@ module ICU
 
       it "should have some last name alternatives" do
         Name.new('William', 'Ffrench').alternatives(:last).should =~ %w{French}
-        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King}
+        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King O`Siochru}
         Name.new('Oissine', 'Murphy').alternatives(:last).should =~ %w{Murchadha}
         Name.new('Debbie', 'Quinn').alternatives(:last).should =~ %w{Benjamin}
         Name.new('Mark', 'Quinn').alternatives(:last).should =~ []

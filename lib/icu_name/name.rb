@@ -136,7 +136,7 @@ module ICU
 
     # Clean up characters in any name keeping only letters (including accented), hyphens, and single quotes.
     def clean(name)
-      name.gsub!(/`/, "'")
+      name.gsub!(/[`‘’′‛]/, "'")
       name.gsub!(/./) do |m|
         if m.ord < 256
           # Keep Latin1 accented letters.
@@ -270,7 +270,14 @@ module ICU
           alts.push k if v == true || v.match(target)
         end
       end
+      alts.concat(automatic_alts(names))
       alts
+    end
+    
+    # Add automatic alternatives - those not dependent on a compiled list.
+    # Currently only provides alternative for apostrophes, as backticks are often used instead by FIDE.
+    def automatic_alts(names)
+      names.find_all{|n| n.index("'")}.map{|n| n.gsub!("'", "`")}
     end
 
     # Compile an alternative names hash (for either first names or last names) before matching is first attempted.
