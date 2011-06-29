@@ -1,5 +1,5 @@
 pkg/*
-rdoc/*
+html/*
 NOTES
 *.gem
 .bundle
