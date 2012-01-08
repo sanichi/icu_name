@@ -2,6 +2,6 @@
 
 module ICU
   class Name
-    VERSION = "1.0.8"
+    VERSION = "1.0.9"
   end
 end
