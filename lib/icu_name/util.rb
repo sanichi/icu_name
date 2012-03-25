@@ -1,5 +1,5 @@
 module ICU
-  class Util
+  module Util
     # Decide if a string is valid UTF-8 or not, returning true or false.
     def self.is_utf8(str)
       dup = str.dup
