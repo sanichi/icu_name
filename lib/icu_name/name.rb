@@ -20,6 +20,7 @@ module ICU
       @name2 = Util.to_utf8(name2.to_s)
       originalize
       canonicalize
+      repair
       @first.freeze
       @last.freeze
       @original.freeze
@@ -156,6 +157,14 @@ module ICU
           p.capitalize!
         end.join('-')
       end.join(' ').to_s
+    end
+    
+    # Try to ensure the encoding is UTF-8. This wasn't necessary before but some upgrade caused a change
+    # in behaviour. Since UTF-8 and ASCII are compatible encodings, it's probably not necessary to do
+    # this but I like to keep everything in the same encoding.
+    def repair
+      @first.force_encoding('UTF-8') if @first.encoding.name == "US-ASCII"
+      @last.force_encoding('UTF-8')  if @last.encoding.name == "US-ASCII"
     end
 
     # Apply final touches to finish canonicalising a first name mb_chars object, returning a normal string.
