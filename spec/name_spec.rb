@@ -416,6 +416,7 @@ module ICU
       it "should match some spelling errors" do
         Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_true
         Name.new('Philip', 'Short').match('Phillip', 'Short').should be_true
+        Name.new('Lyubomir', 'Orr').match('Lubomir', 'Orr').should be_true
       end
 
       it "should handle conditional matches" do

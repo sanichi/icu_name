@@ -1,4 +1,5 @@
 require 'rspec'
+require 'yaml'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/icu_name')
 
 RSpec.configure do |c|
