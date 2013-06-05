@@ -4,7 +4,7 @@ Canonicalises and matches person names with Western European characters and firs
 
 == Installation
 
-For ruby 1.9.2 and above.
+For ruby 1.9.2, 1.9.3, 2.0.0.
 
   gem install icu_name
 
