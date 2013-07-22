@@ -1,6 +1,8 @@
 = ICU Tournament
 
-Canonicalises and matches person names with Western European characters and first and last names.
+Canonicalises and matches person names with Western European characters.
+
+Note: version 1.1.0 dropped support for characters beyond codepoint 255 and became independent of activesupport and i18n.
 
 == Installation
 
@@ -8,14 +10,12 @@ For ruby 1.9.2, 1.9.3, 2.0.0.
 
   gem install icu_name
 
-It depends on _active_support_ and _i18n_.
-
 == Names
 
 This class exists for two main purposes:
 
-* to normalise to a common format the different ways names are typed in practice
-* to be able to match two names even if they are not exactly the same
+* to normalise to a common format the different ways Irish person names are typed in practice
+* to be able to match two names even if they are not exactly the same in their original form
 
 To create a name object, supply both the first and second names separately to the constructor.
 
@@ -36,7 +36,6 @@ supply the two separately. If the full name is supplied alone to the constructor
 of where the first names end, then the last distinct name is assumed to be the last name.
 
   bobby = ICU::Name.new(' bobby  fischer ')
-
   bobby.first                                                 # => 'Bobby'
   bobby.last                                                  # => 'Fischer'
 
@@ -77,13 +76,11 @@ Some other ways last names are canonicalised are illustrated below:
 == Characters and Encoding
 
 The class can only cope with Latin characters, including those with diacritics (accents).
-Along with hyphens and single quotes (which represent apostophes) letters in ISO-8859-1
-(e.g. "a", "è", "Ö") and letters outside ISO-8859-1 which are decomposable into a US-ASCII
-character plus one or more diacritics (e.g. "ł" or "Ś") are preserved, while everything
-else is removed.
+Hyphens, single quotes (which represent apostophes) and letters in the ISO-8859-1 range
+(e.g. "a", "è", "Ö") are preserved, while everything else is removed (unsupported).
 
   ICU::Name.new('éric', 'PRIÉ').name                          # => "Éric Prié"
-  ICU::Name.new('BARTŁOMIEJ', 'śliwa').name                   # => "Bartłomiej Śliwa"
+  ICU::Name.new('BARTŁOMIEJ', 'śliwa').name                   # => "Bartomiej Liwa"
   ICU::Name.new('Սմբատ', 'Լպուտյան').name                     # => ""
 
 The various accessors (<tt>first</tt>, <tt>last</tt>, <tt>name</tt>, <tt>rname</tt>, <tt>to_s</tt>, <tt>original</tt>) always return
@@ -101,21 +98,11 @@ Accented letters can be transliterated into their US-ASCII counterparts by setti
   eric.rname(:chars => "US-ASCII")                            # => "Prie, Eric"
   eric.original(:chars => "US-ASCII")                         # => "PRIE, eric"
 
-Also possible is the preservation of ISO-8859-1 characters, but the transliteration of
-all other accented characters:
-
-  joe = Name.new('Józef', 'Żabiński')
-  joe.rname                                                   # => "Żabiński, Józef"
-  joe.rname(:chars => "ISO-8859-1")                           # => "Zabinski, Józef"
-  joe.rname(:chars => "US-ASCII")                             # => "Zabinski, Jozef"
-
 Note that the character encoding of the strings returned is still UTF-8 in all cases.
 The same option also relaxes the need for accented characters to match exactly:
 
   eric.match('Eric', 'Prie')                                  # => false
   eric.match('Eric', 'Prie', :chars => "US-ASCII")            # => true
-  joe.match('Józef', 'Zabinski')                              # => false
-  joe.match('Józef', 'Zabinski', :chars => "ISO-8859-1")      # => true
 
 == Customization of Alternative Names
 
@@ -153,7 +140,7 @@ To change alternative name behaviour, you can replace the default alternatives
 with a customized set perhaps stored in a database or a YAML file, as illustrated below:
 
   data = YAML.load(File open "my_last_name_alternatives.yaml")
-  Name.load_alternatives(:first, data)
+  Name.load_alternatives(:last, data)
   data = YAML.load(File open "my_first_name_alternatives.yaml")
   Name.load_alternatives(:first, data)
 
@@ -173,8 +160,8 @@ so that now:
   Name.new("Stephen", "Hanly").match("Steven", "Hanly")       # => true
 
 This kind of rule risks producing false positives - you must judge
-carefully whether that risk is outweighed by the benefits of being
-able to overcome spelling mistakes in the context of your application.
+whether that risk is outweighed by the benefits of being able to overcome
+spelling mistakes in the context of your application.
 
 Another use is to cater for English and Irish versions of the same name.
 For example, for last names:

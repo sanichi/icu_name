@@ -14,9 +14,6 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = ">= 1.3.6"
   s.rubyforge_project         = "icu_name"
 
-  s.add_runtime_dependency "activesupport"
-  s.add_runtime_dependency "i18n"
-
   s.add_development_dependency "bundler"
   s.add_development_dependency "rake"
   s.add_development_dependency("rspec")

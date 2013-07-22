@@ -1,7 +1,4 @@
 # encoding: UTF-8
-require 'active_support'
-require 'active_support/inflector/transliterate'
-require 'active_support/core_ext/string/multibyte'
 
 module ICU
   class Name
@@ -20,7 +17,6 @@ module ICU
       @name2 = Util.to_utf8(name2.to_s)
       originalize
       canonicalize
-      repair
       @first.freeze
       @last.freeze
       @original.freeze
@@ -94,13 +90,10 @@ module ICU
       @original.gsub!(/\s+/, ' ')
     end
 
-    # Transliterate characters to ASCII or Latin1.
+    # Transliterate characters to ASCII.
     def transliterate(str, chars='US-ASCII')
-      case chars
-      when /^(US-?)?ASCII/i
-        ActiveSupport::Inflector.transliterate(str)
-      when /^(Windows|CP)-?1252|ISO-?8859-?1|Latin(-?1)?$/i
-        str.gsub(/./) { |m| m.ord < 256 ? m : ActiveSupport::Inflector.transliterate(m) }
+      if chars.match(/ASCII/i)
+        Util.transliterate(str)
       else
         str.dup
       end
@@ -139,49 +132,38 @@ module ICU
     def clean(name)
       name.gsub!(/[`‘’′‛]/, "'")
       name.gsub!(/./) do |m|
-        if m.ord < 256
-          # Keep Latin1 accented letters.
-          m.match(/^[-a-zA-Z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{ff}.'\s]$/) ? m : ''
-        else
-          # Keep ASCII characters with diacritics (e.g. Polish ł and Ś).
-          transliterate(m) == '?' ? '' : m
-        end
+        # Keep only hyphens, normal characters, accented Latin1, full stops, single quotes and spaces.
+        m.ord < 256 && m.match(/\A[-a-zA-Z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{ff}.'\s]\z/) ? m : ''
       end
       name.gsub!(/\./, ' ')
       name.gsub!(/\s*-\s*/, '-')
       name.gsub!(/'+/, "'")
-      name.strip.mb_chars.downcase.split(/\s+/).map do |n|
+      name.strip!
+      name = Util.downcase(name)
+      name.split(/\s+/).map do |n|
         n.sub!(/^-+/, '')
         n.sub!(/-+$/, '')
         n.split(/-/).map do |p|
-          p.capitalize!
+          Util.capitalize(p)
         end.join('-')
-      end.join(' ').to_s
-    end
-    
-    # Try to ensure the encoding is UTF-8. This wasn't necessary before but some upgrade caused a change
-    # in behaviour. Since UTF-8 and ASCII are compatible encodings, it's probably not necessary to do
-    # this but I like to keep everything in the same encoding.
-    def repair
-      @first.force_encoding('UTF-8') if @first.encoding.name == "US-ASCII"
-      @last.force_encoding('UTF-8')  if @last.encoding.name == "US-ASCII"
+      end.join(' ')
     end
 
-    # Apply final touches to finish canonicalising a first name mb_chars object, returning a normal string.
+    # Apply final touches to finish canonicalising a first name.
     def finish_first(names)
       names.gsub(/([A-Z\u{c0}-\u{de}])\b/, '\1.')
     end
 
-    # Apply final touches to finish canonicalising a last name mb_chars object, returning a normal string.
+    # Apply final touches to finish canonicalising a last name.
     def finish_last(names)
-      names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
-      names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 << $2.mb_chars.upcase.to_s }
+      names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util.upcase($2) }
+      names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util.upcase($2) }
       names.gsub!(/\bMac([a-z\u{e0}-\u{ff}])/) do |m|
         letter = $1  # capitalize after "Mac" only if the original clearly indicates it
-        upper = letter.mb_chars.upcase.to_s
+        upper = Util.upcase(letter)
         'Mac'.concat(@original.match(/\bMac#{upper}/) ? upper : letter)
       end
-      names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" << $1 }
+      names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" + $1 } # O Kelly => "O'Kelly"
       names
     end
 
