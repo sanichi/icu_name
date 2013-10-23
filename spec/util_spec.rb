@@ -73,6 +73,8 @@ module ICU
         it "#last_name_like" do
           expect(Dummy.last_name_like("Murphy", "Oissine")).to eq "last_name LIKE '%Murchadha%' OR last_name LIKE '%Murphy%'"
           expect(Dummy.last_name_like("O'Connor", "Jonathan")).to eq "last_name LIKE '%O''Connor%' OR last_name LIKE '%O`Connor%'"
+          expect(Dummy.last_name_like("O'Connor", "\n")).to eq "last_name LIKE '%O''Connor%' OR last_name LIKE '%O`Connor%'"
+          expect(Dummy.last_name_like("O'Connor")).to eq "last_name LIKE '%O''Connor%' OR last_name LIKE '%O`Connor%'"
           expect(Dummy.last_name_like("Orr", "Mark")).to eq "last_name LIKE '%Orr%'"
           expect(Dummy.last_name_like("", "Mark")).to eq "last_name LIKE '%%'"
         end
@@ -80,6 +82,8 @@ module ICU
         it "#first_name_like" do
           expect(Dummy.first_name_like("sean", "bradley")).to eq "first_name LIKE '%John%' OR first_name LIKE '%sean%'"
           expect(Dummy.first_name_like("Jonathan", "O'Connor")).to eq "first_name LIKE '%Jon%' OR first_name LIKE '%Jonathan%'"
+          expect(Dummy.first_name_like("Jonathan", " ")).to eq "first_name LIKE '%Jon%' OR first_name LIKE '%Jonathan%'"
+          expect(Dummy.first_name_like("Jonathan")).to eq "first_name LIKE '%Jon%' OR first_name LIKE '%Jonathan%'"
           expect(Dummy.first_name_like("", "O'Connor")).to eq "first_name LIKE '%%'"
         end
       end

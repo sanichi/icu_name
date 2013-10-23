@@ -55,13 +55,15 @@ module ICU
     
     # For generating SQL queries relating to alternative first or last names.
     module AlternativeNames
-      def last_name_like(last, first)
+      def last_name_like(last, first=nil)
+        first = "X" if first.nil? || first =~ /\A\s*\z/
         ICU::Name.new(first, last).alternatives(:last).push(last).map do |nam|
           "last_name LIKE '%#{quote_str(nam)}%'"
         end.sort.join(" OR ")
       end
 
-      def first_name_like(first, last)
+      def first_name_like(first, last=nil)
+        last = "X" if last.nil? || last =~ /\A\s*\z/
         ICU::Name.new(first, last).alternatives(:first).push(first).map do |nam|
           "first_name LIKE '%#{quote_str(nam)}%'"
         end.sort.join(" OR ")
