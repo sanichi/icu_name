@@ -3,7 +3,8 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 module ICU
   describe Name do
-    def load_alt_test(*types)
+    def load_alt_test(reset, *types)
+      Name.reset_alternatives if reset
       types.each do |type|
         file = File.expand_path(File.dirname(__FILE__) + "/../config/test_#{type}_alts.yaml")
         data = File.open(file) { |fd| YAML.load(fd) }
@@ -351,13 +352,13 @@ module ICU
         Name.new('Gerard', 'Orr').match('Gerald', 'Orr').should be_false
       end
 
-      it "should by default be cautious about misspellings" do
-        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_false
-        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_false
+      it "should handle some common misspellings" do
+        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_true
+        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_true
       end
 
-      it "should by default have no conditional matches" do
-        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_false
+      it "should have some conditional matches" do
+        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_true
       end
 
       it "should not mix up nick names" do
@@ -379,9 +380,9 @@ module ICU
         Name.new('Darko', 'Polimac').match('Darko', 'Polimc').should be_false
       end
 
-      it "should by defaut have no conditional matches" do
-        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_false
-        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_false
+      it "should have some conditional matches" do
+        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_true
+        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_true
       end
     end
 
@@ -404,7 +405,11 @@ module ICU
 
     context "configuring new first name alternatives" do
       before(:all) do
-        load_alt_test(:first)
+        load_alt_test(true, :first)
+      end
+
+      after(:all) do
+        Name.reset_alternatives
       end
 
       it "should match some spelling errors" do
@@ -421,7 +426,11 @@ module ICU
 
     context "configuring new last name alternatives" do
       before(:all) do
-        load_alt_test(:last)
+        load_alt_test(true, :last)
+      end
+
+      after(:all) do
+        Name.reset_alternatives
       end
 
       it "should match some spelling errors" do
@@ -444,7 +453,11 @@ module ICU
 
     context "configuring new first and new last name alternatives" do
       before(:all) do
-        load_alt_test(:first, :last)
+        load_alt_test(true, :first, :last)
+      end
+
+      after(:all) do
+        Name.reset_alternatives
       end
 
       it "should allow some awesome matches" do
@@ -455,16 +468,20 @@ module ICU
 
     context "reverting to the default configuration" do
       before(:all) do
-        load_alt_test(:first, :last)
+        load_alt_test(true, :first, :last)
       end
 
-      it "should not match so boldly after reverting" do
-        Name.new('french, steven').match('Stephen', 'Ffrench').should be_true
+      after(:all) do
+        Name.reset_alternatives
+      end
+
+      it "should not match after reverting" do
+        Name.new('avril, demeter').match('Ceres', 'Avril').should be_true
         Name.load_alternatives(:first)
-        Name.new('Patrick', 'Murphy').match('Padraic', 'Murchadha').should be_false
-        Name.new('Patrick', 'Murphy').match('Patrick', 'Murchadha').should be_true
+        Name.new('avril, demeter').match('Ceres', 'Avril').should be_false
+        Name.new('Patrick', 'Ares').match('Patrick', 'Mars').should be_true
         Name.load_alternatives(:last)
-        Name.new('Patrick', 'Murphy').match('Patrick', 'Murchadha').should be_false
+        Name.new('Patrick', 'Ares').match('Patrick', 'Mars').should be_false
       end
     end
 
@@ -472,35 +489,39 @@ module ICU
       it "should show common nicknames" do
         Name.new('William', 'Ffrench').alternatives(:first).should =~ %w{Bill Willy Willie Will}
         Name.new('Bill', 'Ffrench').alternatives(:first).should =~ %w{William Willy Will Willie}
-        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Steve}
-        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve}
-        Name.new('Michael Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve Mike Mick Mikey}
-        Name.new('Stephen M.', 'Ffrench').alternatives(:first).should =~ %w{Steve}
+        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Steve Stephen}
+        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Michael Stephen', 'Ffrench').alternatives(:first).should =~ %w{Micheal Mick Mickie Micky Mike Mikey Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Stephen M.', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Sean', 'Bradley').alternatives(:first).should =~ %w{John}
         Name.new('S.', 'Ffrench').alternatives(:first).should =~ []
-        Name.new('Sean', 'Bradley').alternatives(:first).should =~ []
       end
 
       it "should have automatic last name alternatives for apostrophes to cater for FIDE's habits" do
-        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ ["O`Siochru"]
-        Name.new('Erwin E.', "L`Ami").alternatives(:last).should =~ ["L`Ami"]
+        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King O`Siochru}
+        Name.new('Erwin E.', "L`Ami").alternatives(:last).should =~ %w{L`Ami}
       end
 
-      it "should not have any last name alternatives" do
-        Name.new('William', 'Ffrench').alternatives(:last).should =~ []
-        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ []
-        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ []
+      it "should not have some last name alternatives" do
+        Name.new('William', 'Ffrench').alternatives(:last).should =~ %w{French}
+        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ %w{Murchadha}
+        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ %w{Benjamin}
       end
     end
 
     context "name alternatives with more adventurous configuration" do
       before(:all) do
-        load_alt_test(:first, :last)
+        load_alt_test(true, :first, :last)
       end
 
-      it "should show additional nicknames" do
+      after(:all) do
+        Name.reset_alternatives
+      end
+
+      it "should show different nicknames" do
         Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Stephen Steve}
-        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
-        Name.new('Stephen Mike', 'Ffrench').alternatives(:first).should =~ %w{Michael Mick Mickie Micky Mikey Stef Stefan Stefen Stephan Steve Steven}
+        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve Steven}
+        Name.new('Stephen Mike', 'Ffrench').alternatives(:first).should =~ %w{Michael Steve Steven}
         Name.new('Sean', 'Bradley').alternatives(:first).should =~ %w{John}
         Name.new('Sean', 'McDonagh').alternatives(:first).should =~ []
         Name.new('John', 'Bradley').alternatives(:first).should =~ %w{Sean Johnny}
@@ -521,6 +542,10 @@ module ICU
         Name.reset_alternatives
       end
 
+      after(:all) do
+        Name.reset_alternatives
+      end
+
       it "should be no more than necessary" do
         alt_compilations(:first).should == 0
         alt_compilations(:last).should == 0
@@ -530,16 +555,10 @@ module ICU
         Name.new('Debbie', 'Quinn').match('Deborah', 'Benjamin')
         alt_compilations(:first).should == 1
         alt_compilations(:last).should == 1
-        load_alt_test(:first)
+        load_alt_test(false, :first)
         alt_compilations(:first).should == 2
         alt_compilations(:last).should == 1
-        load_alt_test(:last)
-        alt_compilations(:first).should == 2
-        alt_compilations(:last).should == 2
-        Name.new('William', 'Ffrench').match('Bill', 'French')
-        Name.new('Debbie', 'Quinn').match('Deborah', 'Benjamin')
-        Name.new('Mark', 'Orr').alternatives(:first)
-        Name.new('Mark', 'Orr').alternatives(:last)
+        load_alt_test(false, :last)
         alt_compilations(:first).should == 2
         alt_compilations(:last).should == 2
       end

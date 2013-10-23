@@ -13,8 +13,8 @@ module ICU
 
     # Construct a new name from one or two strings or any objects that have a to_s method.
     def initialize(name1='', name2='')
-      @name1 = Util.to_utf8(name1.to_s)
-      @name2 = Util.to_utf8(name2.to_s)
+      @name1 = Util::String.to_utf8(name1.to_s)
+      @name2 = Util::String.to_utf8(name2.to_s)
       originalize
       canonicalize
       @first.freeze
@@ -69,10 +69,10 @@ module ICU
       match_first(first(opts), other.first(opts)) && match_last(last(opts), other.last(opts))
     end
 
-    # Load a set of first or last name alternatives. If the YAML file name is absent,
-    # the default set is loaded. <tt>type</tt> should be <tt>:first</tt> or <tt>:last</tt>.
-    def self.load_alternatives(type, file=nil)
-      compile_alts(check_type(type), file, true)
+    # Load a set of first or last name alternatives. If no data is absent, a default set will be loaded.
+    # <tt>type</tt> should be <tt>:first</tt> or <tt>:last</tt>.
+    def self.load_alternatives(type, data=nil)
+      compile_alts(check_type(type), data, true)
     end
 
     # Show first name or last name alternatives.
@@ -93,7 +93,7 @@ module ICU
     # Transliterate characters to ASCII.
     def transliterate(str, chars='US-ASCII')
       if chars.match(/ASCII/i)
-        Util.transliterate(str)
+        Util::String.transliterate(str)
       else
         str.dup
       end
@@ -139,12 +139,12 @@ module ICU
       name.gsub!(/\s*-\s*/, '-')
       name.gsub!(/'+/, "'")
       name.strip!
-      name = Util.downcase(name)
+      name = Util::String.downcase(name)
       name.split(/\s+/).map do |n|
         n.sub!(/^-+/, '')
         n.sub!(/-+$/, '')
         n.split(/-/).map do |p|
-          Util.capitalize(p)
+          Util::String.capitalize(p)
         end.join('-')
       end.join(' ')
     end
@@ -156,11 +156,11 @@ module ICU
 
     # Apply final touches to finish canonicalising a last name.
     def finish_last(names)
-      names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util.upcase($2) }
-      names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util.upcase($2) }
+      names.gsub!(/\b([A-Z\u{c0}-\u{de}]')([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util::String.upcase($2) }
+      names.gsub!(/\b(Mc)([a-z\u{e0}-\u{ff}])/) { |m| $1 + Util::String.upcase($2) }
       names.gsub!(/\bMac([a-z\u{e0}-\u{ff}])/) do |m|
         letter = $1  # capitalize after "Mac" only if the original clearly indicates it
-        upper = Util.upcase(letter)
+        upper = Util::String.upcase(letter)
         'Mac'.concat(@original.match(/\bMac#{upper}/) ? upper : letter)
       end
       names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" + $1 } # O Kelly => "O'Kelly"
