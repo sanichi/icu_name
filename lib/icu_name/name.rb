@@ -151,7 +151,8 @@ module ICU
 
     # Apply final touches to finish canonicalising a first name.
     def finish_first(names)
-      names.gsub(/([A-Z\u{c0}-\u{de}])\b/, '\1.')
+      names.gsub!(/([A-Z\u{c0}-\u{de}])\b/) { $1 + '.' } # Mark J L => Mark J. L.
+      names.gsub(/\b(I(v|ii?))\b/) { $1.upcase } # Richard Iii => Richard III
     end
 
     # Apply final touches to finish canonicalising a last name.
@@ -164,6 +165,7 @@ module ICU
         'Mac'.concat(@original.match(/\bMac#{upper}/) ? upper : letter)
       end
       names.gsub!(/\bO ([A-Z\u{c0}-\u{de}])/) { |m| "O'" + $1 } # O Kelly => "O'Kelly"
+      names.gsub!(/\b(I(v|ii?))\b/) { $1.upcase } # Ford iv => Ford IV
       names
     end
 

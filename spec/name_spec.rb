@@ -160,6 +160,14 @@ module ICU
       end
     end
 
+    context "names with II, III or IV" do
+      it "should be handled correctly" do
+        Name.new('Jerry iIi', 'Jones').name.should == 'Jerry III Jones'
+        Name.new('henry i', 'FORD II').name.should == 'Henry I. Ford II'
+        Name.new('Paul IV', 'Pope').name.should == 'Paul IV Pope'
+      end
+    end
+
     context "accented characters and capitalisation" do
       it "should downcase upper case accented characters where appropriate" do
         name = Name.new('GEARÓIDÍN', 'UÍ LAIGHLÉIS')
