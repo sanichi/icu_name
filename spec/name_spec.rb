@@ -22,32 +22,32 @@ module ICU
       end
 
       it "#first returns the first name(s)" do
-        @simple.first.should == 'Mark J. L.'
+        expect(@simple.first).to eq('Mark J. L.')
       end
 
       it "#last returns the last name(s)" do
-        @simple.last.should == 'Orr'
+        expect(@simple.last).to eq('Orr')
       end
 
       it "#name returns the full name with first name(s) first" do
-        @simple.name.should == 'Mark J. L. Orr'
+        expect(@simple.name).to eq('Mark J. L. Orr')
       end
 
       it "#rname returns the full name with last name(s) first" do
-        @simple.rname.should == 'Orr, Mark J. L.'
+        expect(@simple.rname).to eq('Orr, Mark J. L.')
       end
 
       it "#to_s is the same as rname" do
-        @simple.to_s.should == 'Orr, Mark J. L.'
+        expect(@simple.to_s).to eq('Orr, Mark J. L.')
       end
 
       it "#original returns the original data" do
-        @simple.original.should == 'ORR, mark j l'
+        expect(@simple.original).to eq('ORR, mark j l')
       end
 
       it "#match returns true if and only if two names match" do
-        @simple.match('mark j l orr').should be_true
-        @simple.match('malcolm g l orr').should be_false
+        expect(@simple.match('mark j l orr')).to be_truthy
+        expect(@simple.match('malcolm g l orr')).to be_falsey
       end
     end
 
@@ -58,48 +58,48 @@ module ICU
       end
 
       it "should get Robert" do
-        @robert.name.should == 'Robert J. Fischer'
+        expect(@robert.name).to eq('Robert J. Fischer')
       end
 
       it "should get Bobby" do
-        @bobby.last.should == 'Fischer'
-        @bobby.first.should == 'Bobby'
+        expect(@bobby.last).to eq('Fischer')
+        expect(@bobby.first).to eq('Bobby')
       end
 
       it "should match Robert and Bobby" do
-        @robert.match(@bobby).should be_true
-        @robert.match('R. J.', 'Fischer').should be_true
-        @bobby.match('R. J.', 'Fischer').should be_false
+        expect(@robert.match(@bobby)).to be_truthy
+        expect(@robert.match('R. J.', 'Fischer')).to be_truthy
+        expect(@bobby.match('R. J.', 'Fischer')).to be_falsey
       end
 
       it "should canconicalise last names" do
-        Name.new('John', 'O Reilly').last.should == "O'Reilly"
-        Name.new('dave', 'mcmanus').last.should == "McManus"
-        Name.new('pete', 'MACMANUS').last.should == "Macmanus"
+        expect(Name.new('John', 'O Reilly').last).to eq("O'Reilly")
+        expect(Name.new('dave', 'mcmanus').last).to eq("McManus")
+        expect(Name.new('pete', 'MACMANUS').last).to eq("Macmanus")
       end
 
       it "characters and encoding" do
-        ICU::Name.new('éric', 'PRIÉ').name.should == "Éric Prié"
-        ICU::Name.new('BARTŁOMIEJ', 'śliwa').name.should == "Bartomiej Liwa"
-        ICU::Name.new('Սմբատ', 'Լպուտյան').name.should == ""
+        expect(ICU::Name.new('éric', 'PRIÉ').name).to eq("Éric Prié")
+        expect(ICU::Name.new('BARTŁOMIEJ', 'śliwa').name).to eq("Bartomiej Liwa")
+        expect(ICU::Name.new('Սմբատ', 'Լպուտյան').name).to eq("")
         eric = Name.new('éric'.encode("ISO-8859-1"), 'PRIÉ'.force_encoding("ASCII-8BIT"))
-        eric.rname.should == "Prié, Éric"
-        eric.rname.encoding.name.should == "UTF-8"
-        eric.original.should == "PRIÉ, éric"
-        eric.original.encoding.name.should == "UTF-8"
-        eric.rname(:chars => "US-ASCII").should == "Prie, Eric"
-        eric.original(:chars => "US-ASCII").should == "PRIE, eric"
-        eric.match('Éric', 'Prié').should be_true
-        eric.match('Eric', 'Prie').should be_false
-        eric.match('Eric', 'Prie', :chars => "US-ASCII").should be_true
+        expect(eric.rname).to eq("Prié, Éric")
+        expect(eric.rname.encoding.name).to eq("UTF-8")
+        expect(eric.original).to eq("PRIÉ, éric")
+        expect(eric.original.encoding.name).to eq("UTF-8")
+        expect(eric.rname(:chars => "US-ASCII")).to eq("Prie, Eric")
+        expect(eric.original(:chars => "US-ASCII")).to eq("PRIE, eric")
+        expect(eric.match('Éric', 'Prié')).to be_truthy
+        expect(eric.match('Eric', 'Prie')).to be_falsey
+        expect(eric.match('Eric', 'Prie', :chars => "US-ASCII")).to be_truthy
       end
     end
 
     context "names that are already canonical" do
       it "should not be altered" do
-        Name.new('Mark J. L.', 'Orr').name.should == 'Mark J. L. Orr'
-        Name.new('Anna-Marie J.-K.', 'Liviu-Dieter').name.should == 'Anna-Marie J.-K. Liviu-Dieter'
-        Name.new('Èric Cantona').name.should == 'Èric Cantona'
+        expect(Name.new('Mark J. L.', 'Orr').name).to eq('Mark J. L. Orr')
+        expect(Name.new('Anna-Marie J.-K.', 'Liviu-Dieter').name).to eq('Anna-Marie J.-K. Liviu-Dieter')
+        expect(Name.new('Èric Cantona').name).to eq('Èric Cantona')
       end
     end
 
@@ -109,113 +109,113 @@ module ICU
       end
 
       it "should use apostrophe (0027) as the canonical choice" do
-        Name.new('una', "O'boyle").name.should == "Una O'Boyle"
-        Name.new('Una', "o’boyle").name.should == "Una O'Boyle"
-        Name.new('jonathan', 'd`arcy').name.should == "Jonathan D'Arcy"
-        Name.new('erwin e', "L′AMI").name.should == "Erwin E. L'Ami"
-        Name.new('cormac', "o brien").name.should == "Cormac O'Brien"
-        Name.new('türko', "o özgür").name.should == "Türko O'Özgür"
-        Name.new('türko', "l‘özgür").name.should == "Türko L'Özgür"
+        expect(Name.new('una', "O'boyle").name).to eq("Una O'Boyle")
+        expect(Name.new('Una', "o’boyle").name).to eq("Una O'Boyle")
+        expect(Name.new('jonathan', 'd`arcy').name).to eq("Jonathan D'Arcy")
+        expect(Name.new('erwin e', "L′AMI").name).to eq("Erwin E. L'Ami")
+        expect(Name.new('cormac', "o brien").name).to eq("Cormac O'Brien")
+        expect(Name.new('türko', "o özgür").name).to eq("Türko O'Özgür")
+        expect(Name.new('türko', "l‘özgür").name).to eq("Türko L'Özgür")
       end
 
       it "backticks (0060), opening (2018) and closing (2019) single quotes, primes (2032) and high reversed 9 quotes (201B) should be equivalent" do
-        @una.match("Una", "O`Boyle").should be_true
-        @una.match("Una", "O’Boyle").should be_true
-        @una.match("Una", "O‘Boyle").should be_true
-        @una.match("Una", "O′Boyle").should be_true
-        @una.match("Una", "O‛Boyle").should be_true
-        @una.match("Una", "O‚Boyle").should be_false
+        expect(@una.match("Una", "O`Boyle")).to be_truthy
+        expect(@una.match("Una", "O’Boyle")).to be_truthy
+        expect(@una.match("Una", "O‘Boyle")).to be_truthy
+        expect(@una.match("Una", "O′Boyle")).to be_truthy
+        expect(@una.match("Una", "O‛Boyle")).to be_truthy
+        expect(@una.match("Una", "O‚Boyle")).to be_falsey
       end
     end
 
     context "last beginning with Mc or Mac" do
       it "should be handled correctly" do
-        Name.new('shane', "mccabe").name.should == "Shane McCabe"
-        Name.new('shawn', "macdonagh").name.should == "Shawn Macdonagh"
-        Name.new('Colin', "MacNab").name.should == "Colin MacNab"
-        Name.new('colin', "macnab").name.should == "Colin Macnab"
-        Name.new('bartlomiej', "macieja").name.should == "Bartlomiej Macieja"
-        Name.new('türko', "mcözgür").name.should == "Türko McÖzgür"
-        Name.new('TÜRKO', "MACÖZGÜR").name.should == "Türko Macözgür"
-        Name.new('Türko', "MacÖzgür").name.should == "Türko MacÖzgür"
+        expect(Name.new('shane', "mccabe").name).to eq("Shane McCabe")
+        expect(Name.new('shawn', "macdonagh").name).to eq("Shawn Macdonagh")
+        expect(Name.new('Colin', "MacNab").name).to eq("Colin MacNab")
+        expect(Name.new('colin', "macnab").name).to eq("Colin Macnab")
+        expect(Name.new('bartlomiej', "macieja").name).to eq("Bartlomiej Macieja")
+        expect(Name.new('türko', "mcözgür").name).to eq("Türko McÖzgür")
+        expect(Name.new('TÜRKO', "MACÖZGÜR").name).to eq("Türko Macözgür")
+        expect(Name.new('Türko', "MacÖzgür").name).to eq("Türko MacÖzgür")
       end
     end
 
     context "first name initials" do
       it "should be handled correctly" do
-        Name.new('m j l', 'Orr').first.should == 'M. J. L.'
-        Name.new('Ö. é m', 'Panno').first.should == "Ö. É. M."
+        expect(Name.new('m j l', 'Orr').first).to eq('M. J. L.')
+        expect(Name.new('Ö. é m', 'Panno').first).to eq("Ö. É. M.")
       end
     end
 
     context "doubled barrelled names or initials" do
       it "should be handled correctly" do
-        Name.new('anna-marie', 'den-otter').name.should == 'Anna-Marie Den-Otter'
-        Name.new('j-k', 'rowling').name.should == 'J.-K. Rowling'
-        Name.new("mark j. - l", 'ORR').name.should == 'Mark J.-L. Orr'
-        Name.new('JOHANNA', "lowry-o'REILLY").name.should == "Johanna Lowry-O'Reilly"
-        Name.new('hannah', "lowry - o reilly").name.should == "Hannah Lowry-O'Reilly"
-        Name.new('hannah', "lowry - o reilly").name.should == "Hannah Lowry-O'Reilly"
-        Name.new('ètienne', "gèrard - mcözgür").name.should == "Ètienne Gèrard-McÖzgür"
+        expect(Name.new('anna-marie', 'den-otter').name).to eq('Anna-Marie Den-Otter')
+        expect(Name.new('j-k', 'rowling').name).to eq('J.-K. Rowling')
+        expect(Name.new("mark j. - l", 'ORR').name).to eq('Mark J.-L. Orr')
+        expect(Name.new('JOHANNA', "lowry-o'REILLY").name).to eq("Johanna Lowry-O'Reilly")
+        expect(Name.new('hannah', "lowry - o reilly").name).to eq("Hannah Lowry-O'Reilly")
+        expect(Name.new('hannah', "lowry - o reilly").name).to eq("Hannah Lowry-O'Reilly")
+        expect(Name.new('ètienne', "gèrard - mcözgür").name).to eq("Ètienne Gèrard-McÖzgür")
       end
     end
 
     context "names with II, III or IV" do
       it "should be handled correctly" do
-        Name.new('Jerry iIi', 'Jones').name.should == 'Jerry III Jones'
-        Name.new('henry i', 'FORD II').name.should == 'Henry I. Ford II'
-        Name.new('Paul IV', 'Pope').name.should == 'Paul IV Pope'
+        expect(Name.new('Jerry iIi', 'Jones').name).to eq('Jerry III Jones')
+        expect(Name.new('henry i', 'FORD II').name).to eq('Henry I. Ford II')
+        expect(Name.new('Paul IV', 'Pope').name).to eq('Paul IV Pope')
       end
     end
 
     context "accented characters and capitalisation" do
       it "should downcase upper case accented characters where appropriate" do
         name = Name.new('GEARÓIDÍN', 'UÍ LAIGHLÉIS')
-        name.first.should == 'Gearóidín'
-        name.last.should == 'Uí Laighléis'
+        expect(name.first).to eq('Gearóidín')
+        expect(name.last).to eq('Uí Laighléis')
       end
 
       it "should upcase upper case accented characters where appropriate" do
         name = Name.new('èric özgür')
-        name.first.should == 'Èric'
-        name.last.should == 'Özgür'
+        expect(name.first).to eq('Èric')
+        expect(name.last).to eq('Özgür')
       end
     end
 
     context "extraneous white space" do
       it "should be handled correctly" do
-        Name.new(' mark j   l  ', "  \t\r\n   orr   \n").name.should == 'Mark J. L. Orr'
+        expect(Name.new(' mark j   l  ', "  \t\r\n   orr   \n").name).to eq('Mark J. L. Orr')
       end
     end
 
     context "extraneous full stops" do
       it "should be handled correctly" do
-        Name.new('. mark j..l', 'orr.').name.should == 'Mark J. L. Orr'
+        expect(Name.new('. mark j..l', 'orr.').name).to eq('Mark J. L. Orr')
       end
     end
 
     context "construction from a single string" do
       it "should be possible in simple cases" do
-        Name.new('ORR, mark j l').rname.should == 'Orr, Mark J. L.'
-        Name.new('MARK J L ORR').rname.should == 'Orr, Mark J. L.'
-        Name.new("j-k O'Reilly").rname.should == "O'Reilly, J.-K."
-        Name.new("j-k O Reilly").rname.should == "O'Reilly, J.-K."
-        Name.new('ètienne o o özgür').name.should == "Ètienne O. O'Özgür"
+        expect(Name.new('ORR, mark j l').rname).to eq('Orr, Mark J. L.')
+        expect(Name.new('MARK J L ORR').rname).to eq('Orr, Mark J. L.')
+        expect(Name.new("j-k O'Reilly").rname).to eq("O'Reilly, J.-K.")
+        expect(Name.new("j-k O Reilly").rname).to eq("O'Reilly, J.-K.")
+        expect(Name.new('ètienne o o özgür').name).to eq("Ètienne O. O'Özgür")
       end
     end
 
     context "construction from an instance" do
       it "should be possible" do
-        Name.new(Name.new('ORR, mark j l')).name.should == 'Mark J. L. Orr'
+        expect(Name.new(Name.new('ORR, mark j l')).name).to eq('Mark J. L. Orr')
       end
     end
 
     context "the original input" do
       it "should be the original text unaltered except for white space" do
-        Name.new(' Mark   j l   ', ' ORR  ').original.should == 'ORR, Mark j l'
-        Name.new(' Mark  J.  L.  Orr ').original.should == 'Mark J. L. Orr'
-        Name.new('Józef', 'Żabiński').original.should == 'Żabiński, Józef'
-        Name.new('Ui  Laigleis,Gearoidin').original.should == 'Ui Laigleis,Gearoidin'
+        expect(Name.new(' Mark   j l   ', ' ORR  ').original).to eq('ORR, Mark j l')
+        expect(Name.new(' Mark  J.  L.  Orr ').original).to eq('Mark J. L. Orr')
+        expect(Name.new('Józef', 'Żabiński').original).to eq('Żabiński, Józef')
+        expect(Name.new('Ui  Laigleis,Gearoidin').original).to eq('Ui Laigleis,Gearoidin')
       end
     end
 
@@ -227,44 +227,44 @@ module ICU
 
       it "should handle UTF-8" do
         name = Name.new(@first, @last)
-        name.first.should == @first
-        name.last.should == @last
-        name.first.encoding.name.should == "UTF-8"
-        name.last.encoding.name.should == "UTF-8"
+        expect(name.first).to eq(@first)
+        expect(name.last).to eq(@last)
+        expect(name.first.encoding.name).to eq("UTF-8")
+        expect(name.last.encoding.name).to eq("UTF-8")
       end
 
       it "should handle ISO-8859-1" do
         name = Name.new(@first.encode("ISO-8859-1"), @last.encode("ISO-8859-1"))
-        name.first.should == @first
-        name.last.should == @last
-        name.first.encoding.name.should == "UTF-8"
-        name.last.encoding.name.should == "UTF-8"
+        expect(name.first).to eq(@first)
+        expect(name.last).to eq(@last)
+        expect(name.first.encoding.name).to eq("UTF-8")
+        expect(name.last.encoding.name).to eq("UTF-8")
       end
 
       it "should handle Windows-1252" do
         name = Name.new(@first.encode("Windows-1252"), @last.encode("Windows-1252"))
-        name.first.should == @first
-        name.last.should == @last
-        name.first.encoding.name.should == "UTF-8"
-        name.last.encoding.name.should == "UTF-8"
+        expect(name.first).to eq(@first)
+        expect(name.last).to eq(@last)
+        expect(name.first.encoding.name).to eq("UTF-8")
+        expect(name.last.encoding.name).to eq("UTF-8")
       end
 
       it "should handle ASCII-8BIT" do
         name = Name.new(@first.dup.force_encoding('ASCII-8BIT'), @last.dup.force_encoding('ASCII-8BIT'))
-        name.first.should == @first
-        name.last.should == @last
-        name.first.encoding.name.should == "UTF-8"
-        name.last.encoding.name.should == "UTF-8"
+        expect(name.first).to eq(@first)
+        expect(name.last).to eq(@last)
+        expect(name.first.encoding.name).to eq("UTF-8")
+        expect(name.last.encoding.name).to eq("UTF-8")
       end
 
       it "should handle US-ASCII" do
         @first = 'Gearoidin'
         @last  = 'Ui Laighleis'
         name = Name.new(@first.encode("US-ASCII"), @last.encode("US-ASCII"))
-        name.first.should == @first
-        name.last.should == @last
-        name.first.encoding.name.should == "UTF-8"
-        name.last.encoding.name.should == "UTF-8"
+        expect(name.first).to eq(@first)
+        expect(name.last).to eq(@last)
+        expect(name.first.encoding.name).to eq("UTF-8")
+        expect(name.last.encoding.name).to eq("UTF-8")
       end
     end
 
@@ -275,35 +275,35 @@ module ICU
 
       it "should be a no-op for names that are already ASCII" do
         name = Name.new('Mark J. L.', 'Orr')
-        name.first(@opt).should == 'Mark J. L.'
-        name.last(@opt).should == 'Orr'
-        name.name(@opt).should == 'Mark J. L. Orr'
-        name.rname(@opt).should == 'Orr, Mark J. L.'
-        name.to_s(@opt).should == 'Orr, Mark J. L.'
+        expect(name.first(@opt)).to eq('Mark J. L.')
+        expect(name.last(@opt)).to eq('Orr')
+        expect(name.name(@opt)).to eq('Mark J. L. Orr')
+        expect(name.rname(@opt)).to eq('Orr, Mark J. L.')
+        expect(name.to_s(@opt)).to eq('Orr, Mark J. L.')
       end
 
       it "should remove the accents from accented characters" do
         name = Name.new('Gearóidín', 'Uí Laighléis')
-        name.first(@opt).should == 'Gearoidin'
-        name.last(@opt).should == 'Ui Laighleis'
-        name.name(@opt).should == 'Gearoidin Ui Laighleis'
-        name.rname(@opt).should == 'Ui Laighleis, Gearoidin'
-        name.to_s(@opt).should == 'Ui Laighleis, Gearoidin'
+        expect(name.first(@opt)).to eq('Gearoidin')
+        expect(name.last(@opt)).to eq('Ui Laighleis')
+        expect(name.name(@opt)).to eq('Gearoidin Ui Laighleis')
+        expect(name.rname(@opt)).to eq('Ui Laighleis, Gearoidin')
+        expect(name.to_s(@opt)).to eq('Ui Laighleis, Gearoidin')
         name = Name.new('èric PRIÉ')
-        name.first(@opt).should == 'Eric'
-        name.last(@opt).should == 'Prie'
+        expect(name.first(@opt)).to eq('Eric')
+        expect(name.last(@opt)).to eq('Prie')
       end
     end
 
     context "constuction corner cases" do
       it "should be handled correctly" do
-        Name.new('Orr').name.should == 'Orr'
-        Name.new('Orr').rname.should == 'Orr'
-        Name.new('Uí Laighléis').rname.should == 'Laighléis, Uí'
-        Name.new('').name.should == ''
-        Name.new('').rname.should == ''
-        Name.new.name.should == ''
-        Name.new.rname.should == ''
+        expect(Name.new('Orr').name).to eq('Orr')
+        expect(Name.new('Orr').rname).to eq('Orr')
+        expect(Name.new('Uí Laighléis').rname).to eq('Laighléis, Uí')
+        expect(Name.new('').name).to eq('')
+        expect(Name.new('').rname).to eq('')
+        expect(Name.new.name).to eq('')
+        expect(Name.new.rname).to eq('')
       end
     end
 
@@ -314,100 +314,100 @@ module ICU
       end
 
       it "should be flexible" do
-        @mark.match('Mark', 'Orr').should be_true
-        @mark.match('Mark Orr').should be_true
-        @mark.match('Orr, Mark').should be_true
-        @mark.match(@kram).should be_true
+        expect(@mark.match('Mark', 'Orr')).to be_truthy
+        expect(@mark.match('Mark Orr')).to be_truthy
+        expect(@mark.match('Orr, Mark')).to be_truthy
+        expect(@mark.match(@kram)).to be_truthy
       end
     end
 
     context "first name matches" do
       it "should match when first names are the same" do
-        Name.new('Mark', 'Orr').match('Mark', 'Orr').should be_true
+        expect(Name.new('Mark', 'Orr').match('Mark', 'Orr')).to be_truthy
       end
 
       it "should be flexible with regards to hyphens in double barrelled names" do
-        Name.new('J.-K.', 'Rowling').match('J. K.', 'Rowling').should be_true
-        Name.new('Joanne-K.', 'Rowling').match('Joanne K.', 'Rowling').should be_true
-        Name.new('Èric-K.', 'Cantona').match('Èric K.', 'Cantona').should be_true
+        expect(Name.new('J.-K.', 'Rowling').match('J. K.', 'Rowling')).to be_truthy
+        expect(Name.new('Joanne-K.', 'Rowling').match('Joanne K.', 'Rowling')).to be_truthy
+        expect(Name.new('Èric-K.', 'Cantona').match('Èric K.', 'Cantona')).to be_truthy
       end
 
       it "should match initials" do
-        Name.new('M. J. L.', 'Orr').match('Mark John Legard', 'Orr').should be_true
-        Name.new('M.', 'Orr').match('Mark', 'Orr').should be_true
-        Name.new('M. J. L.', 'Orr').match('Mark', 'Orr').should be_true
-        Name.new('M.', 'Orr').match('M. J.', 'Orr').should be_true
-        Name.new('M. J. L.', 'Orr').match('M. G.', 'Orr').should be_false
-        Name.new('È', 'Cantona').match('Èric K.', 'Cantona').should be_true
-        Name.new('E. K.', 'Cantona').match('Èric K.', 'Cantona').should be_false
+        expect(Name.new('M. J. L.', 'Orr').match('Mark John Legard', 'Orr')).to be_truthy
+        expect(Name.new('M.', 'Orr').match('Mark', 'Orr')).to be_truthy
+        expect(Name.new('M. J. L.', 'Orr').match('Mark', 'Orr')).to be_truthy
+        expect(Name.new('M.', 'Orr').match('M. J.', 'Orr')).to be_truthy
+        expect(Name.new('M. J. L.', 'Orr').match('M. G.', 'Orr')).to be_falsey
+        expect(Name.new('È', 'Cantona').match('Èric K.', 'Cantona')).to be_truthy
+        expect(Name.new('E. K.', 'Cantona').match('Èric K.', 'Cantona')).to be_falsey
       end
 
       it "should not match on full names not in first position or without an exact match" do
-        Name.new('J. M.', 'Orr').match('John', 'Orr').should be_true
-        Name.new('M. J.', 'Orr').match('John', 'Orr').should be_false
-        Name.new('M. John', 'Orr').match('John', 'Orr').should be_true
+        expect(Name.new('J. M.', 'Orr').match('John', 'Orr')).to be_truthy
+        expect(Name.new('M. J.', 'Orr').match('John', 'Orr')).to be_falsey
+        expect(Name.new('M. John', 'Orr').match('John', 'Orr')).to be_truthy
       end
 
       it "should handle common nicknames" do
-        Name.new('William', 'Orr').match('Bill', 'Orr').should be_true
-        Name.new('David', 'Orr').match('Dave', 'Orr').should be_true
-        Name.new('Mick', 'Orr').match('Mike', 'Orr').should be_true
+        expect(Name.new('William', 'Orr').match('Bill', 'Orr')).to be_truthy
+        expect(Name.new('David', 'Orr').match('Dave', 'Orr')).to be_truthy
+        expect(Name.new('Mick', 'Orr').match('Mike', 'Orr')).to be_truthy
       end
 
       it "should handle ambiguous nicknames" do
-        Name.new('Gerry', 'Orr').match('Gerald', 'Orr').should be_true
-        Name.new('Gerry', 'Orr').match('Gerard', 'Orr').should be_true
-        Name.new('Gerard', 'Orr').match('Gerald', 'Orr').should be_false
+        expect(Name.new('Gerry', 'Orr').match('Gerald', 'Orr')).to be_truthy
+        expect(Name.new('Gerry', 'Orr').match('Gerard', 'Orr')).to be_truthy
+        expect(Name.new('Gerard', 'Orr').match('Gerald', 'Orr')).to be_falsey
       end
 
       it "should handle some common misspellings" do
-        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_true
-        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_true
+        expect(Name.new('Steven', 'Brady').match('Stephen', 'Brady')).to be_truthy
+        expect(Name.new('Philip', 'Short').match('Phillip', 'Short')).to be_truthy
       end
 
       it "should have some conditional matches" do
-        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_true
+        expect(Name.new('Sean', 'Bradley').match('John', 'Bradley')).to be_truthy
       end
 
       it "should not mix up nick names" do
-        Name.new('David', 'Orr').match('Bill', 'Orr').should be_false
+        expect(Name.new('David', 'Orr').match('Bill', 'Orr')).to be_falsey
       end
     end
 
     context "last name matches" do
       it "should be flexible with regards to hyphens in double barrelled names" do
-        Name.new('Johanna', "Lowry-O'Reilly").match('Johanna', "Lowry O'Reilly").should be_true
+        expect(Name.new('Johanna', "Lowry-O'Reilly").match('Johanna', "Lowry O'Reilly")).to be_truthy
       end
 
       it "should be case insensitive in matches involving Macsomething and MacSomething" do
-        Name.new('Alan', 'MacDonagh').match('Alan', 'Macdonagh').should be_true
+        expect(Name.new('Alan', 'MacDonagh').match('Alan', 'Macdonagh')).to be_truthy
       end
 
       it "should cater for the common mispelling of names beginning with Mc or Mac" do
-        Name.new('Alan', 'McDonagh').match('Alan', 'MacDonagh').should be_true
-        Name.new('Darko', 'Polimac').match('Darko', 'Polimc').should be_false
+        expect(Name.new('Alan', 'McDonagh').match('Alan', 'MacDonagh')).to be_truthy
+        expect(Name.new('Darko', 'Polimac').match('Darko', 'Polimc')).to be_falsey
       end
 
       it "should have some conditional matches" do
-        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_true
-        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_true
+        expect(Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin')).to be_truthy
+        expect(Name.new('Mairead', "O'Siochru").match('Mairead', 'King')).to be_truthy
       end
     end
 
     context "matches involving accented characters" do
       it "should work for identical names" do
-        Name.new('Gearóidín', 'Uí Laighléis').match('Gearóidín', 'Uí Laighléis').should be_true
-        Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laighleis').should be_false
+        expect(Name.new('Gearóidín', 'Uí Laighléis').match('Gearóidín', 'Uí Laighléis')).to be_truthy
+        expect(Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laighleis')).to be_falsey
       end
 
       it "should work for first name initials" do
-        Name.new('Èric-K.', 'Cantona').match('È. K.', 'Cantona').should be_true
-        Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona').should be_false
+        expect(Name.new('Èric-K.', 'Cantona').match('È. K.', 'Cantona')).to be_truthy
+        expect(Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona')).to be_falsey
       end
 
       it "the matching of accented characters can be relaxed" do
-        Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laíghleis', :chars => "US-ASCII").should be_true
-        Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona', :chars => "US-ASCII").should be_true
+        expect(Name.new('Gearóidín', 'Uí Laighléis').match('Gearoidin', 'Ui Laíghleis', :chars => "US-ASCII")).to be_truthy
+        expect(Name.new('Èric-K.', 'Cantona').match('E. K.', 'Cantona', :chars => "US-ASCII")).to be_truthy
       end
     end
 
@@ -421,14 +421,14 @@ module ICU
       end
 
       it "should match some spelling errors" do
-        Name.new('Steven', 'Brady').match('Stephen', 'Brady').should be_true
-        Name.new('Philip', 'Short').match('Phillip', 'Short').should be_true
-        Name.new('Lyubomir', 'Orr').match('Lubomir', 'Orr').should be_true
+        expect(Name.new('Steven', 'Brady').match('Stephen', 'Brady')).to be_truthy
+        expect(Name.new('Philip', 'Short').match('Phillip', 'Short')).to be_truthy
+        expect(Name.new('Lyubomir', 'Orr').match('Lubomir', 'Orr')).to be_truthy
       end
 
       it "should handle conditional matches" do
-        Name.new('Sean', 'Collins').match('John', 'Collins').should be_false
-        Name.new('Sean', 'Bradley').match('John', 'Bradley').should be_true
+        expect(Name.new('Sean', 'Collins').match('John', 'Collins')).to be_falsey
+        expect(Name.new('Sean', 'Bradley').match('John', 'Bradley')).to be_truthy
       end
     end
 
@@ -442,20 +442,20 @@ module ICU
       end
 
       it "should match some spelling errors" do
-        Name.new('William', 'Ffrench').match('William', 'French').should be_true
+        expect(Name.new('William', 'Ffrench').match('William', 'French')).to be_truthy
       end
 
       it "should handle conditional matches" do
-        Name.new('Mark', 'Quinn').match('Mark', 'Benjamin').should be_false
-        Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin').should be_true
-        Name.new('Oisin', "O'Siochru").match('Oisin', 'King').should be_false
-        Name.new('Mairead', "O'Siochru").match('Mairead', 'King').should be_true
+        expect(Name.new('Mark', 'Quinn').match('Mark', 'Benjamin')).to be_falsey
+        expect(Name.new('Debbie', 'Quinn').match('Debbie', 'Benjamin')).to be_truthy
+        expect(Name.new('Oisin', "O'Siochru").match('Oisin', 'King')).to be_falsey
+        expect(Name.new('Mairead', "O'Siochru").match('Mairead', 'King')).to be_truthy
       end
 
       it "should allow some awesome matches" do
-        Name.new('debbie quinn').match('Deborah', 'Benjamin').should be_true
-        Name.new('french, william').match('Bill', 'Ffrench').should be_true
-        Name.new('Oissine', 'Murphy').match('Oissine', 'Murchadha').should be_true
+        expect(Name.new('debbie quinn').match('Deborah', 'Benjamin')).to be_truthy
+        expect(Name.new('french, william').match('Bill', 'Ffrench')).to be_truthy
+        expect(Name.new('Oissine', 'Murphy').match('Oissine', 'Murchadha')).to be_truthy
       end
     end
 
@@ -469,8 +469,8 @@ module ICU
       end
 
       it "should allow some awesome matches" do
-        Name.new('french, steven').match('Stephen', 'Ffrench').should be_true
-        Name.new('Patrick', 'Murphy').match('Padraic', 'Murchadha').should be_true
+        expect(Name.new('french, steven').match('Stephen', 'Ffrench')).to be_truthy
+        expect(Name.new('Patrick', 'Murphy').match('Padraic', 'Murchadha')).to be_truthy
       end
     end
 
@@ -484,36 +484,36 @@ module ICU
       end
 
       it "should not match after reverting" do
-        Name.new('avril, demeter').match('Ceres', 'Avril').should be_true
+        expect(Name.new('avril, demeter').match('Ceres', 'Avril')).to be_truthy
         Name.load_alternatives(:first)
-        Name.new('avril, demeter').match('Ceres', 'Avril').should be_false
-        Name.new('Patrick', 'Ares').match('Patrick', 'Mars').should be_true
+        expect(Name.new('avril, demeter').match('Ceres', 'Avril')).to be_falsey
+        expect(Name.new('Patrick', 'Ares').match('Patrick', 'Mars')).to be_truthy
         Name.load_alternatives(:last)
-        Name.new('Patrick', 'Ares').match('Patrick', 'Mars').should be_false
+        expect(Name.new('Patrick', 'Ares').match('Patrick', 'Mars')).to be_falsey
       end
     end
 
     context "name alternatives with default configuration" do
       it "should show common nicknames" do
-        Name.new('William', 'Ffrench').alternatives(:first).should =~ %w{Bill Willy Willie Will}
-        Name.new('Bill', 'Ffrench').alternatives(:first).should =~ %w{William Willy Will Willie}
-        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Steve Stephen}
-        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
-        Name.new('Michael Stephen', 'Ffrench').alternatives(:first).should =~ %w{Micheal Mick Mickie Micky Mike Mikey Stef Stefan Stefen Stephan Steve Steven}
-        Name.new('Stephen M.', 'Ffrench').alternatives(:first).should =~ %w{Stef Stefan Stefen Stephan Steve Steven}
-        Name.new('Sean', 'Bradley').alternatives(:first).should =~ %w{John}
-        Name.new('S.', 'Ffrench').alternatives(:first).should =~ []
+        expect(Name.new('William', 'Ffrench').alternatives(:first)).to match_array(%w{Bill Willy Willie Will})
+        expect(Name.new('Bill', 'Ffrench').alternatives(:first)).to match_array(%w{William Willy Will Willie})
+        expect(Name.new('Steven', 'Ffrench').alternatives(:first)).to match_array(%w{Steve Stephen})
+        expect(Name.new('Stephen', 'Ffrench').alternatives(:first)).to match_array(%w{Stef Stefan Stefen Stephan Steve Steven})
+        expect(Name.new('Michael Stephen', 'Ffrench').alternatives(:first)).to match_array(%w{Micheal Mick Mickie Micky Mike Mikey Stef Stefan Stefen Stephan Steve Steven})
+        expect(Name.new('Stephen M.', 'Ffrench').alternatives(:first)).to match_array(%w{Stef Stefan Stefen Stephan Steve Steven})
+        expect(Name.new('Sean', 'Bradley').alternatives(:first)).to match_array(%w{John})
+        expect(Name.new('S.', 'Ffrench').alternatives(:first)).to match_array([])
       end
 
       it "should have automatic last name alternatives for apostrophes to cater for FIDE's habits" do
-        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King O`Siochru}
-        Name.new('Erwin E.', "L`Ami").alternatives(:last).should =~ %w{L`Ami}
+        expect(Name.new('Mairead', "O'Siochru").alternatives(:last)).to match_array(%w{King O`Siochru})
+        expect(Name.new('Erwin E.', "L`Ami").alternatives(:last)).to match_array(%w{L`Ami})
       end
 
       it "should not have some last name alternatives" do
-        Name.new('William', 'Ffrench').alternatives(:last).should =~ %w{French}
-        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ %w{Murchadha}
-        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ %w{Benjamin}
+        expect(Name.new('William', 'Ffrench').alternatives(:last)).to match_array(%w{French})
+        expect(Name.new('Oissine', 'Murphy').alternatives(:last)).to match_array(%w{Murchadha})
+        expect(Name.new('Debbie', 'Quinn').alternatives(:last)).to match_array(%w{Benjamin})
       end
     end
 
@@ -527,21 +527,21 @@ module ICU
       end
 
       it "should show different nicknames" do
-        Name.new('Steven', 'Ffrench').alternatives(:first).should =~ %w{Stephen Steve}
-        Name.new('Stephen', 'Ffrench').alternatives(:first).should =~ %w{Steve Steven}
-        Name.new('Stephen Mike', 'Ffrench').alternatives(:first).should =~ %w{Michael Steve Steven}
-        Name.new('Sean', 'Bradley').alternatives(:first).should =~ %w{John}
-        Name.new('Sean', 'McDonagh').alternatives(:first).should =~ []
-        Name.new('John', 'Bradley').alternatives(:first).should =~ %w{Sean Johnny}
+        expect(Name.new('Steven', 'Ffrench').alternatives(:first)).to match_array(%w{Stephen Steve})
+        expect(Name.new('Stephen', 'Ffrench').alternatives(:first)).to match_array(%w{Steve Steven})
+        expect(Name.new('Stephen Mike', 'Ffrench').alternatives(:first)).to match_array(%w{Michael Steve Steven})
+        expect(Name.new('Sean', 'Bradley').alternatives(:first)).to match_array(%w{John})
+        expect(Name.new('Sean', 'McDonagh').alternatives(:first)).to match_array([])
+        expect(Name.new('John', 'Bradley').alternatives(:first)).to match_array(%w{Sean Johnny})
       end
 
       it "should have some last name alternatives" do
-        Name.new('William', 'Ffrench').alternatives(:last).should =~ %w{French}
-        Name.new('Mairead', "O'Siochru").alternatives(:last).should =~ %w{King O`Siochru}
-        Name.new('Oissine', 'Murphy').alternatives(:last).should =~ %w{Murchadha}
-        Name.new('Debbie', 'Quinn').alternatives(:last).should =~ %w{Benjamin}
-        Name.new('Mark', 'Quinn').alternatives(:last).should =~ []
-        Name.new('Debbie', 'Quinn-French').alternatives(:last).should =~ %w{Benjamin Ffrench}
+        expect(Name.new('William', 'Ffrench').alternatives(:last)).to match_array(%w{French})
+        expect(Name.new('Mairead', "O'Siochru").alternatives(:last)).to match_array(%w{King O`Siochru})
+        expect(Name.new('Oissine', 'Murphy').alternatives(:last)).to match_array(%w{Murchadha})
+        expect(Name.new('Debbie', 'Quinn').alternatives(:last)).to match_array(%w{Benjamin})
+        expect(Name.new('Mark', 'Quinn').alternatives(:last)).to match_array([])
+        expect(Name.new('Debbie', 'Quinn-French').alternatives(:last)).to match_array(%w{Benjamin Ffrench})
       end
     end
 
@@ -555,20 +555,20 @@ module ICU
       end
 
       it "should be no more than necessary" do
-        alt_compilations(:first).should == 0
-        alt_compilations(:last).should == 0
+        expect(alt_compilations(:first)).to eq(0)
+        expect(alt_compilations(:last)).to eq(0)
         Name.new('William', 'Ffrench').match('Bill', 'French')
-        alt_compilations(:first).should == 1
-        alt_compilations(:last).should == 1
+        expect(alt_compilations(:first)).to eq(1)
+        expect(alt_compilations(:last)).to eq(1)
         Name.new('Debbie', 'Quinn').match('Deborah', 'Benjamin')
-        alt_compilations(:first).should == 1
-        alt_compilations(:last).should == 1
+        expect(alt_compilations(:first)).to eq(1)
+        expect(alt_compilations(:last)).to eq(1)
         load_alt_test(false, :first)
-        alt_compilations(:first).should == 2
-        alt_compilations(:last).should == 1
+        expect(alt_compilations(:first)).to eq(2)
+        expect(alt_compilations(:last)).to eq(1)
         load_alt_test(false, :last)
-        alt_compilations(:first).should == 2
-        alt_compilations(:last).should == 2
+        expect(alt_compilations(:first)).to eq(2)
+        expect(alt_compilations(:last)).to eq(2)
       end
     end
 
@@ -578,27 +578,27 @@ module ICU
       end
 
       it "there are no setters" do
-        lambda { @mark.first = "Malcolm" }.should raise_error(/undefined/)
-        lambda { @mark.last = "Dickie" }.should raise_error(/undefined/)
-        lambda { @mark.original = "mark orr" }.should raise_error(/undefined/)
+        expect { @mark.first = "Malcolm" }.to raise_error(/undefined/)
+        expect { @mark.last = "Dickie" }.to raise_error(/undefined/)
+        expect { @mark.original = "mark orr" }.to raise_error(/undefined/)
       end
 
       it "should prevent accidentally access to the instance variables" do
         @mark.first.downcase!
-        @mark.first.should == "Màrk"
+        expect(@mark.first).to eq("Màrk")
         @mark.last.downcase!
-        @mark.last.should == "Orr"
+        expect(@mark.last).to eq("Orr")
         @mark.original.downcase!
-        @mark.original.should == "Orr, Màrk"
+        expect(@mark.original).to eq("Orr, Màrk")
       end
 
       it "should prevent accidentally access to the instance variables when transliterating" do
         @mark.first(:chars => "US-ASCII").downcase!
-        @mark.first.should == "Màrk"
+        expect(@mark.first).to eq("Màrk")
         @mark.last(:chars => "US-ASCII").downcase!
-        @mark.last.should == "Orr"
+        expect(@mark.last).to eq("Orr")
         @mark.original(:chars => "US-ASCII").downcase!
-        @mark.original.should == "Orr, Màrk"
+        expect(@mark.original).to eq("Orr, Màrk")
       end
     end
   end

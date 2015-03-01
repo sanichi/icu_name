@@ -6,21 +6,21 @@ module ICU
     describe String do
       context "#is_utf8" do
         it "recognises some encodings as a special case of UTF-8" do
-          expect(String.is_utf8("Resume".encode("US-ASCII"))).to be_true
-          expect(String.is_utf8("Resume".encode("ASCII-8BIT"))).to be_true
-          expect(String.is_utf8("Resume".encode("BINARY"))).to be_true
+          expect(String.is_utf8("Resume".encode("US-ASCII"))).to be_truthy
+          expect(String.is_utf8("Resume".encode("ASCII-8BIT"))).to be_truthy
+          expect(String.is_utf8("Resume".encode("BINARY"))).to be_truthy
         end
 
         it "recognises UTF-8" do
-          expect(String.is_utf8("Résumé")).to be_true
-          expect(String.is_utf8("δog")).to be_true
+          expect(String.is_utf8("Résumé")).to be_truthy
+          expect(String.is_utf8("δog")).to be_truthy
         end
 
         it "should recognize other encodings as not being UTF-8" do
-          expect(String.is_utf8("Résumé".encode("ISO-8859-1"))).to be_false
-          expect(String.is_utf8("€50".encode("Windows-1252"))).to be_false
-          expect(String.is_utf8("ひらがな".encode("Shift_JIS"))).to be_false
-          expect(String.is_utf8("\xa3")).to be_false
+          expect(String.is_utf8("Résumé".encode("ISO-8859-1"))).to be_falsey
+          expect(String.is_utf8("€50".encode("Windows-1252"))).to be_falsey
+          expect(String.is_utf8("ひらがな".encode("Shift_JIS"))).to be_falsey
+          expect(String.is_utf8("\xa3")).to be_falsey
         end
       end
 

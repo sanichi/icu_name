@@ -15,10 +15,10 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = ">= 1.3.6"
   s.rubyforge_project         = "icu_name"
 
-  s.add_development_dependency "bundler"
-  s.add_development_dependency "rake"
-  s.add_development_dependency("rspec")
-  s.add_development_dependency("rdoc")
+  s.add_development_dependency "bundler", "~> 1.8"
+  s.add_development_dependency "rake", "~> 10.4"
+  s.add_development_dependency "rspec", "~> 3.2"
+  s.add_development_dependency "rdoc", "~> 4.2"
 
   s.files            = Dir.glob("lib/**/*.rb") + Dir.glob("spec/**/*.rb") + Dir.glob("config/*.yaml") + %w(LICENCE README.rdoc)
   s.extra_rdoc_files = %w(LICENCE README.rdoc)
