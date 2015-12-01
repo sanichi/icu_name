@@ -1,4 +1,9 @@
-= ICU Tournament
+= New Home
+
+This repository was forked in late 2015 and is now maintained at
+https://github.com/ninkibah/icu_name.
+
+= ICU Name
 
 Canonicalises and matches person names with Western European characters.
 
